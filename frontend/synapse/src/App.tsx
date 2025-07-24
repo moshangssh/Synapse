@@ -1,59 +1,100 @@
 import { useState, useEffect } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
+import {
+  Box,
+  Button,
+  Container,
+  Typography,
+  CssBaseline,
+  AppBar,
+  Toolbar,
+  CircularProgress,
+} from "@mui/material";
+import { ThemeProvider, createTheme } from "@mui/material/styles";
+import SubtitleTable from "./components/SubtitleTable";
+import ConnectionStatus from "./components/ConnectionStatus";
+
+const darkTheme = createTheme({
+  palette: {
+    mode: "dark",
+  },
+});
+
+interface Subtitle {
+  id: number;
+  startTimecode: string;
+  endTimecode: string;
+  text: string;
+}
+
+type Status = "connected" | "connecting" | "error" | "initial";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
-  const [backendMsg, setBackendMsg] = useState("");
+  const [subtitles, setSubtitles] = useState<Subtitle[]>([]);
+  const [connectionStatus, setConnectionStatus] = useState<Status>("initial");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetch("http://localhost:8000")
-      .then((response) => response.json())
-      .then((data) => setBackendMsg(data.message))
-      .catch((error) => console.error("Error fetching data:", error));
-  }, []);
+  const fetchSubtitles = async () => {
+    setLoading(true);
+    setConnectionStatus("connecting");
+    setErrorMessage("");
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/v1/subtitles");
+      const data = await response.json();
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
+      if (response.ok && data.status === "success") {
+        setSubtitles(data.data);
+        setConnectionStatus("connected");
+      } else {
+        throw new Error(data.message || "获取字幕失败");
+      }
+    } catch (error: any) {
+      setConnectionStatus("error");
+      setErrorMessage(
+        error.message || "无法连接到后端服务，请检查服务是否正在运行。"
+      );
+      setSubtitles([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
-      <h2>Message from backend: {backendMsg}</h2>
-
-      <div className="row">
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+    <ThemeProvider theme={darkTheme}>
+      <CssBaseline />
+      <AppBar position="static">
+        <Toolbar>
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+            DaVinci Resolve 字幕提取器
+          </Typography>
+        </Toolbar>
+      </AppBar>
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 2,
+          }}
+        >
+          <ConnectionStatus
+            status={connectionStatus}
+            message={errorMessage}
+          />
+          <Button
+            variant="contained"
+            onClick={fetchSubtitles}
+            disabled={loading}
+            startIcon={loading ? <CircularProgress size={20} /> : null}
+          >
+            {loading ? "刷新中..." : "刷新"}
+          </Button>
+        </Box>
+        <SubtitleTable subtitles={subtitles} />
+      </Container>
+    </ThemeProvider>
   );
 }
 

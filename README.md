@@ -20,15 +20,25 @@
     ```bash
     cd backend
     python -m venv env
-    source env/bin/activate
+    source env/Scripts/activate
     pip install -r requirements.txt
     ```
 
 3.  **启动开发服务器:**
-    ```bash
-    cd frontend/synapse
-    npm run tauri dev
-    ```
+    为了同时运行前端和后端，你需要打开两个终端窗口。
+
+    - **终端 1: 启动后端服务**
+      ```bash
+      cd backend
+      source env/Scripts/activate  # 在 Windows 上使用 `env\Scripts\activate`
+      uvicorn main:app --reload
+      ```
+
+    - **终端 2: 启动前端开发服务器和 Tauri 应用**
+      ```bash
+      cd frontend/synapse
+      npm run tauri dev
+      ```
 
 ## 项目结构
 
