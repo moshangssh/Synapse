@@ -12,3 +12,12 @@ def format_timecode(frame, frame_rate):
     # Add 1 to the frame to match the 1-based indexing of the library
     tc = Timecode(frame_rate, frames=int(frame) + 1)
     return str(tc)
+
+def timecode_to_frames(tc_str: str, frame_rate: float) -> int:
+    """Converts HH:MM:SS:FF to frame count."""
+    tc = Timecode(frame_rate, tc_str)
+    return tc.frames - 1
+
+def frames_to_timecode(frames: int, frame_rate: float) -> str:
+    """Converts frame count to HH:MM:SS:FF."""
+    return format_timecode(frames, frame_rate)

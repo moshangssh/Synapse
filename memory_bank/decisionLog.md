@@ -12,3 +12,9 @@
 **Impact:** This change should resolve the `AttributeError: module 'DaVinciResolveScript' has no attribute 'scriptapp'` error and allow the application to connect to DaVinci Resolve successfully.
 
 - **2025-07-24:** [已决定] 决定将 `format_timecode` 函数从 `resolve_utils.py` 中解耦出来，创建一个新的 `timecode_utils.py` 模块。 **理由:** 提高代码的模块化程度和可维护性。`format_timecode` 的功能相对独立，将其分离可以使 `resolve_utils.py` 更专注于与 DaVinci Resolve API 的直接交互逻辑，而 `timecode_utils.py` 则专门负责时间码相关的计算和格式化。
+
+- **2025-07-24:** [已决定] 为实现点击字幕跳转时间线功能，决定在后端创建一个新的API端点 `/api/v1/timeline/timecode`，并重构现有的DaVinci Resolve连接逻辑。 **理由:** 1.  **功能需求:** 需要一个新的API来处理前端发送的时间码跳转请求。2.  **代码质量:** 在实现新功能的同时，发现现有的连接逻辑存在重复代码。通过将其重构为一个可复用的辅助函数，可以提高代码的可维护性和可读性，为未来的功能扩展打下良好基础。
+
+- **2025-07-24:** [已决定] 为实现播放头跳转到“终点”和“中点”的功能，决定扩展后端API `/api/v1/timeline/timecode`。 **理由:** 1.  **功能需求:** 需要API支持更灵活的跳转选项。 2.  **代码实现:** 通过在请求中添加 `jump_to` 参数（值为 "start", "end", 或 "middle"），后端可以灵活处理不同的跳转逻辑，同时保持API的简洁性。
+
+- **2025-07-24:** [已决定] 在前端实现一个全局下拉菜单来控制播放头的跳转模式。 **理由:** 1.  **用户体验:** 全局控制比在每一行都添加一个下拉菜单更简洁，操作更方便。 2.  **实现简单:** 这种方式可以减少组件的复杂性，更容易实现和维护。

@@ -8,6 +8,11 @@ import {
   AppBar,
   Toolbar,
   CircularProgress,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  SelectChangeEvent,
 } from "@mui/material";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import SubtitleTable from "./components/SubtitleTable";
@@ -27,12 +32,18 @@ interface Subtitle {
 }
 
 type Status = "connected" | "connecting" | "error" | "initial";
+type JumpTo = "start" | "end" | "middle";
 
 function App() {
   const [subtitles, setSubtitles] = useState<Subtitle[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<Status>("initial");
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [jumpTo, setJumpTo] = useState<JumpTo>("start");
+
+  const handleJumpToChange = (event: SelectChangeEvent<JumpTo>) => {
+    setJumpTo(event.target.value as JumpTo);
+  };
 
   const fetchSubtitles = async () => {
     setLoading(true);
@@ -83,16 +94,32 @@ function App() {
             status={connectionStatus}
             message={errorMessage}
           />
-          <Button
-            variant="contained"
-            onClick={fetchSubtitles}
-            disabled={loading}
-            startIcon={loading ? <CircularProgress size={20} /> : null}
-          >
-            {loading ? "刷新中..." : "刷新"}
-          </Button>
+          <Box sx={{ display: "flex", gap: 2 }}>
+            <FormControl sx={{ m: 1, minWidth: 120 }} size="small">
+              <InputLabel id="jump-to-select-label">跳转模式</InputLabel>
+              <Select
+                labelId="jump-to-select-label"
+                id="jump-to-select"
+                value={jumpTo}
+                label="跳转模式"
+                onChange={handleJumpToChange}
+              >
+                <MenuItem value={"start"}>入点</MenuItem>
+                <MenuItem value={"middle"}>中点</MenuItem>
+                <MenuItem value={"end"}>出点</MenuItem>
+              </Select>
+            </FormControl>
+            <Button
+              variant="contained"
+              onClick={fetchSubtitles}
+              disabled={loading}
+              startIcon={loading ? <CircularProgress size={20} /> : null}
+            >
+              {loading ? "刷新中..." : "刷新"}
+            </Button>
+          </Box>
         </Box>
-        <SubtitleTable subtitles={subtitles} />
+        <SubtitleTable subtitles={subtitles} jumpTo={jumpTo} />
       </Container>
     </ThemeProvider>
   );

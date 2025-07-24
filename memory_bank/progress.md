@@ -113,3 +113,94 @@
 *   **完成者:** NexusCore (协调), code-developer (执行)
 *   **状态:** ✅ 成功
 *   **耗时:** 约10分钟
+
+
+---
+
+### 任务：实现点击字幕跳转时间线功能
+*   **描述:** 设计并实现了一项新功能，允许用户通过点击前端界面中的字幕，来控制 DaVinci Resolve 时间线中的播放头跳转到对应位置。
+*   **完成情况:**
+    *   **后端 (code-developer):**
+        *   在 `backend/resolve_utils.py` 中重构了 DaVinci Resolve 的连接逻辑，提高了代码复用性。
+        *   在 `backend/main.py` 中创建了新的 API 端点 `/api/v1/timeline/timecode`，用于接收和处理设置时间码的请求。
+    *   **前端 (code-developer):**
+        *   在 `frontend/synapse/src/components/SubtitleTable.tsx` 中为字幕行添加了 `onClick` 事件。
+        *   实现了调用后端 API 并跳转播放头的功能，并添加了点击高亮和错误处理。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **耗时:** 约25分钟
+
+---
+
+### 任务：增强后端播放头导航功能
+*   **描述:** 扩展了后端API `/api/v1/timeline/timecode`，以支持跳转到“终点”和计算出的“中点”。
+*   **完成情况:**
+    *   **后端 (code-developer):**
+        *   修改了 `backend/main.py` 中的 `TimecodeRequest` 模型和端点逻辑，以处理 "start", "end", 和 "middle" 选项。
+        *   在 `backend/resolve_utils.py` 中实现了计算中点和跳转的逻辑。
+        *   更新了 `timecode_utils.py` 以包含 `timecode_to_frames` 和 `frames_to_timecode` 函数。
+        *   重写了单元测试以覆盖新功能，并确保所有测试都通过。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **耗时:** 约30分钟
+
+---
+
+### 任务：增强前端播放头导航功能
+*   **描述:** 在前端UI上实现了一个全局下拉菜单，允许用户选择跳转到“起点”、“终点”或“中点”。
+*   **完成情况:**
+    *   **前端 (code-developer):**
+        *   在 `App.tsx` 中添加了全局的跳转模式 (`jumpTo`) state 和一个 `Select` 组件来控制它。
+        *   修改了 `SubtitleTable.tsx` 来接收 `jumpTo` prop，并相应地更新了 API 请求。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **耗时:** 约15分钟
+
+---
+
+### 任务：优化前端错误提示
+*   **ID:** `4e129ff1-d027-4e8a-abfe-68899d5a7c7a`
+*   **描述:** 将前端API调用失败时的`alert()`提示替换为更友好的Snackbar/Toast组件，以改善用户体验。
+*   **实施指南:** 1. **安装依赖**: `npm install notistack` 2. **包裹App**: 在`src/main.tsx`中，使用`SnackbarProvider`包裹`<App />`组件。 3. **创建Hook**: 创建`src/hooks/useNotifier.ts`，封装`notistack`的`enqueueSnackbar`方法，提供一个简单的API（如`notify.success()`、`notify.error()`）。 4. **替换alert**: 在`src/components/SubtitleTable.tsx`的`handleRowClick`函数中，引入`useNotifier` hook，并将`alert()`调用替换为`notify.error()`。
+*   **验证标准:** API调用失败时，页面顶部应显示一个红色的Snackbar错误提示，而不是一个阻塞性的`alert`对话框。
+*   **状态:** ✅ 成功
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **完成时间:** 2025-07-24
+*   **耗时:** 约8分钟
+
+---
+
+### 任务：移除前端硬编码的API地址
+*   **ID:** `08692214-dd82-45f4-a225-5c260367c900`
+*   **描述:** 将`frontend/synapse/src/components/SubtitleTable.tsx`中硬编码的后端API地址`http://localhost:8000`移动到环境变量中。
+*   **实施指南:** 1. **创建.env文件**: 在`frontend/synapse`目录下创建一个`.env.local`文件。 2. **添加环境变量**: 在`.env.local`文件中添加`VITE_API_URL=http://localhost:8000`。 3. **更新代码**: 在`SubtitleTable.tsx`中，将硬编码的URL替换为`import.meta.env.VITE_API_URL`。 4. **更新.gitignore**: 确保`.env.local`已被添加到项目根目录的`.gitignore`文件中。
+*   **验证标准:** 前端应用应能通过环境变量正确访问到后端API，并且硬编码的地址已从源代码中移除。
+*   **状态:** ✅ 成功
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **完成时间:** 2025-07-24
+*   **耗时:** 约3分钟
+
+---
+
+### 任务：统一后端测试框架为pytest
+*   **ID:** `6b478f58-a292-4cd0-9f5f-aa40cc0c72dc`
+*   **描述:** 将`backend/tests/test_resolve_utils.py`中`unittest`风格的测试重构为`pytest`风格。
+*   **实施指南:** 1. **移除unittest相关代码**: 移除`import unittest`和`TestResolveUtils`类的`unittest.TestCase`继承。 2. **转换测试方法**: 将类方法转换为独立的`pytest`测试函数（例如，`def test_set_resolve_timecode_jump_to_start(...)`）。 3. **转换断言**: 将`self.assertEqual(a, b)`替换为`assert a == b`，将`self.assertIn(a, b)`替换为`assert a in b`。 4. **处理setUp**: 如果有setUp逻辑，可以考虑使用`pytest`的fixture来代替。
+*   **验证标准:** `test_resolve_utils.py`中的所有测试都应以`pytest`风格编写，并且所有测试用例都能成功通过。
+*   **状态:** ✅ 成功
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **完成时间:** 2025-07-24
+*   **耗时:** 约38分钟
+
+---
+
+### 任务：为前端组件添加单元测试
+*   **ID:** `eb1e9dc8-81ae-46cb-945e-4453c78555db`
+*   **描述:** 使用`Vitest`和`React Testing Library`为`frontend/synapse/src/components/SubtitleTable.tsx`组件添加单元测试。
+*   **实施指南:** 1. **安装依赖**: `npm install -D vitest @testing-library/react @testing-library/jest-dom jsdom`。 2. **配置Vitest**: 在`vite.config.ts`中添加`test`配置项，设置`globals: true`和`environment: 'jsdom'`。 3. **创建测试文件**: 创建`frontend/synapse/src/components/SubtitleTable.test.tsx`。 4. **编写测试用例**: 编写一个测试用例，渲染`SubtitleTable`组件，模拟用户点击某一行，并使用`@testing-library/react`的`waitFor`和`expect`来验证`fetch`是否被以正确的参数调用。
+*   **验证标准:** 为`SubtitleTable`组件编写的单元测试应能成功运行，并能验证组件的核心交互逻辑。
+*   **依赖:** 移除前端硬编码的API地址 (`08692214-dd82-45f4-a225-5c260367c900`)
+*   **状态:** ✅ 成功
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **完成时间:** 2025-07-24
+*   **耗时:** 约8分钟

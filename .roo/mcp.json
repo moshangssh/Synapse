@@ -76,6 +76,11 @@
       ],
       "disabled": false,
       "alwaysAllow": []
+    },
+    "mui-mcp": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@mui/mcp@latest"]
     }
   }
 }

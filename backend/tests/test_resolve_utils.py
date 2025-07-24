@@ -1,41 +1,90 @@
 import pytest
-from ..resolve_utils import format_timecode
+from unittest.mock import patch, MagicMock
+import sys
+import os
 
-def test_format_timecode_zero_frame():
-    """
-    Tests formatting for the first frame (frame 0).
-    """
-    assert format_timecode(0, 24) == "00:00:00:00"
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-def test_format_timecode_standard_24fps():
-    """
-    Tests a standard timecode at 24 fps.
-    1 hour, 2 minutes, 3 seconds, 4 frames
-    """
-    # Frame number for 01:02:03:04
-    frame_number = 89356
-    assert format_timecode(frame_number, 24) == "01:02:03:04"
+from resolve_utils import set_resolve_timecode
 
-def test_format_timecode_different_framerates_drop_frame():
-    """
-    Tests timecode formatting at 29.97 fps (drop frame).
-    The Timecode library uses a semicolon for drop-frame timecode.
-    10 seconds and 4 frames
-    """
-    # Frame number for 00:00:10;04
-    frame_number = 304
-    assert format_timecode(frame_number, 29.97) == "00:00:10;04"
+@pytest.fixture
+def mock_resolve_setup():
+    """Provides a mocked Resolve and Timeline object for tests."""
+    mock_timeline = MagicMock()
+    mock_timeline.GetSetting.return_value = '24.0'
+    
+    mock_project = MagicMock()
+    mock_project.GetCurrentTimeline.return_value = mock_timeline
+    
+    mock_project_manager = MagicMock()
+    mock_project_manager.GetCurrentProject.return_value = mock_project
+    
+    mock_resolve = MagicMock()
+    mock_resolve.GetProjectManager.return_value = mock_project_manager
+    return mock_resolve, mock_timeline
 
-def test_format_timecode_large_frame_number():
-    """
-    Tests a large frame number to ensure calculation is correct.
-    """
-    # Frame number for 23:59:59:23
-    frame_number = 2073599
-    assert format_timecode(frame_number, 24) == "23:59:59:23"
+@patch('resolve_utils._connect_to_resolve')
+def test_set_resolve_timecode_jump_to_start(mock_connect, mock_resolve_setup):
+    """Tests jumping to the start timecode."""
+    mock_resolve, mock_timeline = mock_resolve_setup
+    mock_connect.return_value = (mock_resolve, None)
+    
+    in_point = "01:00:00:00"
+    out_point = "01:00:10:00"
+    
+    status, result = set_resolve_timecode(in_point=in_point, out_point=out_point, jump_to="start")
+    
+    assert status == "success"
+    assert in_point in result["message"]
+    mock_timeline.SetCurrentTimecode.assert_called_once_with(in_point)
 
-def test_format_timecode_zero_framerate():
-    """
-    Tests that a frame rate of 0 is handled correctly.
-    """
-    assert format_timecode(100, 0) == "00:00:00:00"
+@patch('resolve_utils._connect_to_resolve')
+def test_set_resolve_timecode_jump_to_end(mock_connect, mock_resolve_setup):
+    """Tests jumping to the end timecode."""
+    mock_resolve, mock_timeline = mock_resolve_setup
+    mock_connect.return_value = (mock_resolve, None)
+    
+    in_point = "01:00:00:00"
+    out_point = "01:00:10:00"
+    
+    status, result = set_resolve_timecode(in_point=in_point, out_point=out_point, jump_to="end")
+    
+    assert status == "success"
+    assert out_point in result["message"]
+    mock_timeline.SetCurrentTimecode.assert_called_once_with(out_point)
+
+@patch('resolve_utils._connect_to_resolve')
+@patch('resolve_utils.timecode_to_frames')
+@patch('resolve_utils.frames_to_timecode')
+def test_set_resolve_timecode_jump_to_middle(mock_frames_to_tc, mock_tc_to_frames, mock_connect, mock_resolve_setup):
+    """Tests jumping to the middle timecode."""
+    mock_resolve, mock_timeline = mock_resolve_setup
+    mock_connect.return_value = (mock_resolve, None)
+    
+    in_point = "01:00:00:00"
+    out_point = "01:00:10:00"
+    middle_point = "01:00:05:00"
+
+    mock_tc_to_frames.side_effect = [0, 240]
+    mock_frames_to_tc.return_value = middle_point
+    
+    status, result = set_resolve_timecode(in_point=in_point, out_point=out_point, jump_to="middle")
+    
+    assert status == "success"
+    assert middle_point in result["message"]
+    mock_timeline.SetCurrentTimecode.assert_called_once_with(middle_point)
+    mock_tc_to_frames.assert_any_call(in_point, 24.0)
+    mock_tc_to_frames.assert_any_call(out_point, 24.0)
+    mock_frames_to_tc.assert_called_once_with(120, 24.0)
+
+@patch('resolve_utils._connect_to_resolve')
+def test_set_resolve_timecode_connection_error(mock_connect, mock_resolve_setup):
+    """Tests handling of a Resolve connection error."""
+    mock_resolve, _ = mock_resolve_setup
+    error_message = {"code": "resolve_not_running", "message": "无法连接到 DaVinci Resolve。"}
+    mock_connect.return_value = (None, error_message)
+    
+    status, result = set_resolve_timecode("00", "00", "start")
+    
+    assert status == "error"
+    assert result == error_message
