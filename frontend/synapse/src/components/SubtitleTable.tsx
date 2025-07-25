@@ -1,24 +1,31 @@
-import React from 'react';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
+import React, { useCallback, memo, useState, useMemo } from 'react';
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField } from '@mui/material';
+import { FixedSizeList as List } from 'react-window';
 import useNotifier from '../hooks/useNotifier';
+import SubtitleRow from './SubtitleRow';
+import type { DiffPart } from './DiffHighlighter';
 
-interface Subtitle {
+export interface Subtitle {
   id: number;
   startTimecode: string;
   endTimecode: string;
   text: string;
+  diffs: DiffPart[];
 }
 
 interface SubtitleTableProps {
   subtitles: Subtitle[];
   jumpTo: "start" | "end" | "middle";
+  onSubtitleChange: (id: number, newText: string) => void;
 }
 
-const SubtitleTable: React.FC<SubtitleTableProps> = ({ subtitles, jumpTo }) => {
-  const [selectedRow, setSelectedRow] = React.useState<number | null>(null);
+
+const SubtitleTable: React.FC<SubtitleTableProps> = ({ subtitles, jumpTo, onSubtitleChange }) => {
+  const [selectedRow, setSelectedRow] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const notify = useNotifier();
 
-  const handleRowClick = async (
+  const handleRowClick = useCallback(async (
     inPoint: string,
     outPoint: string,
     id: number
@@ -51,48 +58,64 @@ const SubtitleTable: React.FC<SubtitleTableProps> = ({ subtitles, jumpTo }) => {
       console.error("Error setting timecode:", error);
       notify.error(`跳转失败: ${error}`);
     }
-  };
+  }, [jumpTo, notify]);
+
+
+  const itemData = useMemo(() => ({
+    subtitles,
+    handleRowClick,
+    selectedRow,
+    onSubtitleChange,
+    editingId,
+    setEditingId,
+  }), [subtitles, handleRowClick, selectedRow, onSubtitleChange, editingId, setEditingId]);
 
   return (
-    <TableContainer component={Paper}>
-      <Table sx={{ minWidth: 650 }} aria-label="simple table">
+    <TableContainer
+      component={Paper}
+      sx={{
+        height: 'calc(100vh - 200px)',
+        '&::-webkit-scrollbar': {
+          display: 'none',
+        },
+        msOverflowStyle: 'none',  // IE and Edge
+        scrollbarWidth: 'none',  // Firefox
+      }}
+    >
+      <Table sx={{ tableLayout: 'fixed', width: '100%' }} aria-label="simple table">
         <TableHead>
-          <TableRow>
-            <TableCell>序号</TableCell>
-            <TableCell>起始时间码</TableCell>
-            <TableCell>结束时间码</TableCell>
-            <TableCell>字幕内容</TableCell>
+          <TableRow sx={{ display: 'flex', width: '100%' }}>
+            <TableCell align="center" sx={{ width: '80px', flexShrink: 0 }}>序号</TableCell>
+            <TableCell align="center" sx={{ width: '150px', flexShrink: 0 }}>起始时间码</TableCell>
+            <TableCell align="center" sx={{ width: '150px', flexShrink: 0 }}>结束时间码</TableCell>
+            <TableCell sx={{ flexGrow: 1 }}>字幕内容</TableCell>
           </TableRow>
         </TableHead>
-        <TableBody>
-          {subtitles.map((row) => (
-            <TableRow
-              key={row.id}
-              onClick={() =>
-                handleRowClick(row.startTimecode, row.endTimecode, row.id)
-              }
-              sx={{
-                cursor: "pointer",
-                "&:hover": {
-                  backgroundColor: "action.hover",
-                },
-                ...(selectedRow === row.id && {
-                  backgroundColor: 'action.selected',
-                }),
-              }}
-            >
-              <TableCell component="th" scope="row">
-                {row.id}
-              </TableCell>
-              <TableCell>{row.startTimecode}</TableCell>
-              <TableCell>{row.endTimecode}</TableCell>
-              <TableCell>{row.text}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
       </Table>
+      <List
+        height={window.innerHeight - 250}
+        itemCount={subtitles.length}
+        itemSize={53}
+        width="100%"
+        itemData={itemData}
+      >
+        {({ data, index, style }) => {
+          const row = data.subtitles[index];
+          return (
+            <SubtitleRow
+              row={row}
+              style={style}
+              selectedRow={data.selectedRow}
+              editingId={data.editingId}
+              handleRowClick={data.handleRowClick}
+              onSubtitleChange={data.onSubtitleChange}
+              setEditingId={data.setEditingId}
+            />
+          );
+        }}
+      </List>
     </TableContainer>
   );
 };
 
-export default SubtitleTable;
+export default memo(SubtitleTable);

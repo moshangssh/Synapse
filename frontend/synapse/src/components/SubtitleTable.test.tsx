@@ -1,53 +1,133 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { vi } from 'vitest';
-import SubtitleTable from './SubtitleTable';
+import '@testing-library/jest-dom';
+import SubtitleTable, { Subtitle } from './SubtitleTable';
 
-// Mock the global fetch function
-global.fetch = vi.fn();
+// Mock the useNotifier hook
+vi.mock('../hooks/useNotifier', () => ({
+  __esModule: true,
+  default: () => ({
+    error: vi.fn(),
+    success: vi.fn(),
+  }),
+}));
+
+interface MockListProps {
+  children: React.ComponentType<{ data: any; index: number; style: React.CSSProperties; key: number }>;
+  itemData: {
+    subtitles: { id: number }[];
+  };
+  height: number;
+  width: string;
+}
+
+// Mock react-window
+vi.mock('react-window', () => ({
+  __esModule: true,
+  FixedSizeList: ({ children: RowComponent, itemData, height, width }: MockListProps) => {
+    return (
+      <div style={{ height, width }}>
+        {itemData.subtitles.map((subtitle, index) => (
+          <RowComponent data={itemData} index={index} style={{}} key={subtitle.id} />
+        ))}
+      </div>
+    );
+  },
+}));
+
 
 describe('SubtitleTable', () => {
-  const subtitles = [
-    { id: 1, startTimecode: '00:00:01:00', endTimecode: '00:00:03:00', text: 'Hello' },
-    { id: 2, startTimecode: '00:00:04:00', endTimecode: '00:00:06:00', text: 'World' },
+  const mockSubtitles: Subtitle[] = [
+    { id: 1, startTimecode: '00:00:01,000', endTimecode: '00:00:03,000', text: 'Hello world', diffs: [{ type: 'normal', value: 'Hello world' }] },
+    { id: 2, startTimecode: '00:00:04,000', endTimecode: '00:00:06,000', text: 'This is a test', diffs: [{ type: 'normal', value: 'This is a test' }] },
   ];
 
+  const mockOnSubtitleChange = vi.fn();
+
   beforeEach(() => {
-    // Reset the mock before each test
-    (global.fetch as ReturnType<typeof vi.fn>).mockClear();
+    vi.clearAllMocks();
+    // Mock fetch
+    globalThis.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({}),
+      })
+    ) as any;
   });
 
-  it('should call fetch with the correct parameters when a row is clicked', async () => {
-    // Mock a successful response
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({}),
-    } as Response);
+  it('renders subtitles correctly', () => {
+    render(<SubtitleTable subtitles={mockSubtitles} jumpTo="start" onSubtitleChange={mockOnSubtitleChange} />);
+    expect(screen.getByText('Hello world')).toBeInTheDocument();
+    expect(screen.getByText('This is a test')).toBeInTheDocument();
+  });
 
-    render(<SubtitleTable subtitles={subtitles} jumpTo="start" />);
+  it('enters edit mode on double click', async () => {
+    render(<SubtitleTable subtitles={mockSubtitles} jumpTo="start" onSubtitleChange={mockOnSubtitleChange} />);
+    const textElement = screen.getByText('Hello world');
+    fireEvent.doubleClick(textElement);
+    const input = await screen.findByDisplayValue('Hello world');
+    expect(input).toBeInTheDocument();
+  });
 
-    // Find the first row by its text content and click it
-    const firstRow = screen.getByText('Hello').closest('tr');
-    if (!firstRow) {
-        throw new Error("Could not find the table row");
-    }
-    fireEvent.click(firstRow);
+  it('allows text to be changed in edit mode', async () => {
+    render(<SubtitleTable subtitles={mockSubtitles} jumpTo="start" onSubtitleChange={mockOnSubtitleChange} />);
+    fireEvent.doubleClick(screen.getByText('Hello world'));
+    const input: HTMLInputElement = await screen.findByDisplayValue('Hello world');
+    fireEvent.change(input, { target: { value: 'Updated text' } });
+    expect(input.value).toBe('Updated text');
+  });
+
+  it('calls onSubtitleChange and exits edit mode on Enter key', async () => {
+    render(<SubtitleTable subtitles={mockSubtitles} jumpTo="start" onSubtitleChange={mockOnSubtitleChange} />);
+    fireEvent.doubleClick(screen.getByText('Hello world'));
+    const input = await screen.findByDisplayValue('Hello world');
+    fireEvent.change(input, { target: { value: 'Updated text' } });
+    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+
+    expect(mockOnSubtitleChange).toHaveBeenCalledWith(1, 'Updated text');
+    expect(screen.queryByDisplayValue('Updated text')).not.toBeInTheDocument();
+  });
+
+  it('calls onSubtitleChange and exits edit mode on blur', async () => {
+    render(<SubtitleTable subtitles={mockSubtitles} jumpTo="start" onSubtitleChange={mockOnSubtitleChange} />);
+    fireEvent.doubleClick(screen.getByText('Hello world'));
+    const input = await screen.findByDisplayValue('Hello world');
+    fireEvent.change(input, { target: { value: 'Updated on blur' } });
+    fireEvent.blur(input);
+
+    expect(mockOnSubtitleChange).toHaveBeenCalledWith(1, 'Updated on blur');
+    expect(screen.queryByDisplayValue('Updated on blur')).not.toBeInTheDocument();
+  });
+
+  it('does not call onSubtitleChange and exits edit mode on Escape key', async () => {
+    render(<SubtitleTable subtitles={mockSubtitles} jumpTo="start" onSubtitleChange={mockOnSubtitleChange} />);
+    fireEvent.doubleClick(screen.getByText('Hello world'));
+    const input = await screen.findByDisplayValue('Hello world');
+    fireEvent.change(input, { target: { value: 'This should not be saved' } });
+    fireEvent.keyDown(input, { key: 'Escape', code: 'Escape' });
+
+    expect(mockOnSubtitleChange).not.toHaveBeenCalled();
+    expect(screen.queryByDisplayValue('This should not be saved')).not.toBeInTheDocument();
+    // The original text should be back
+    expect(screen.getByText('Hello world')).toBeInTheDocument();
+  });
+
+  it('does not call onSubtitleChange on blur after Escape key is pressed', async () => {
+    render(<SubtitleTable subtitles={mockSubtitles} jumpTo="start" onSubtitleChange={mockOnSubtitleChange} />);
+    fireEvent.doubleClick(screen.getByText('Hello world'));
+    const input = await screen.findByDisplayValue('Hello world');
+    fireEvent.change(input, { target: { value: 'This should also not be saved' } });
+
+    // Press Escape
+    fireEvent.keyDown(input, { key: 'Escape', code: 'Escape' });
     
-    // Wait for the fetch call to be made
-    await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith(
-        `${import.meta.env.VITE_API_URL}/api/v1/timeline/timecode`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            in_point: '00:00:01:00',
-            out_point: '00:00:03:00',
-            jump_to: 'start',
-          }),
-        }
-      );
-    });
+    // Then blur the input
+    fireEvent.blur(input);
+
+    // The change should NOT have been saved
+    expect(mockOnSubtitleChange).not.toHaveBeenCalled();
+    expect(screen.queryByDisplayValue('This should also not be saved')).not.toBeInTheDocument();
+    expect(screen.getByText('Hello world')).toBeInTheDocument();
   });
 });

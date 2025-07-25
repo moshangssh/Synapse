@@ -204,3 +204,46 @@
 *   **完成者:** NexusCore (协调), code-developer (执行)
 *   **完成时间:** 2025-07-24
 *   **耗时:** 约8分钟
+
+---
+
+### 任务：在前端实现字幕搜索功能
+*   **ID:** `d3a7e3c1-0b7a-4b1f-9e4a-5f8b9a1b2c3d`
+*   **描述:** 在前端应用中添加一个搜索框，允许用户根据关键词实时筛选字幕列表。
+*   **实施指南:** 1. **添加State**: 在`frontend/synapse/src/App.tsx`中添加`searchQuery` state。 2. **添加UI组件**: 添加一个`TextField`组件用于用户输入。 3. **实现筛选逻辑**: 在`App.tsx`中实现一个`filteredSubtitles`数组，根据`searchQuery`对原始字幕数据进行不区分大小写的筛选。 4. **更新组件传参**: 将筛选后的`filteredSubtitles`传递给`SubtitleTable`组件。
+*   **验证标准:** 用户可以在搜索框中输入文本，字幕表格应只显示包含该文本的行，搜索功能不区分大小写。
+*   **状态:** ✅ 成功
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **完成时间:** 2025-07-24
+*   **耗时:** 约15分钟
+
+
+---
+
+### 任务：修复字幕表格搜索时的UI卡顿问题
+*   **ID:** `b288631a-dc27-4053-bb6f-c566538341d9`
+*   **描述:** 修复了在搜索字幕时，因表头宽度自适应调整而导致的UI卡顿和布局闪烁问题。
+*   **完成情况:** 已通过为 `frontend/synapse/src/components/SubtitleTable.tsx` 中的表格设置 `table-layout: fixed` 样式并为表头指定固定宽度来解决此问题。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-07-24
+*   **耗时:** 约5分钟
+
+---
+
+### 任务：实现文本差异高亮及SRT导出功能
+*   **ID:** `d6e119ec-5350-4092-90e2-8cd3df0f157a` (前端), `4c53b5af-522b-4b20-af5d-1db6ea63e795` (后端)
+*   **描述:** 实现了一个完整的、采用前后端分离架构的文本差异高亮及SRT导出功能。
+*   **完成情况:**
+    *   **后端 (code-developer):**
+        *   改造了 `/api/v1/subtitles` 接口，使其能够返回时间线的准确帧率。
+        *   创建了一个全新的 `POST /api/v1/export/srt` 接口，负责接收前端数据并生成格式完美的SRT文件内容。
+        *   将所有Pydantic模型移至新的 `backend/schemas.py` 文件中，优化了项目结构。
+    *   **前端 (code-developer):**
+        *   创建了 `DiffHighlighter.tsx` 组件，用于在UI上高亮显示文本差异。
+        *   在 `App.tsx` 和 `SubtitleTable.tsx` 中集成了差异计算、状态管理和调用导出API的逻辑。
+        *   添加了 `diff` 库作为项目依赖，并更新了Vite配置以确保兼容性。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-07-25
+*   **耗时:** 约1小时30分钟 (包含多次方案迭代)

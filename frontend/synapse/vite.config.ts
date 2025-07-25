@@ -8,6 +8,9 @@ const host = process.env.TAURI_DEV_HOST;
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
   plugins: [react()],
+  optimizeDeps: {
+    exclude: ['diff'],
+  },
   test: {
     globals: true,
     environment: 'jsdom',

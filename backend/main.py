@@ -1,9 +1,15 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
 from typing import List, Union
 
-from resolve_utils import get_resolve_subtitles, set_resolve_timecode
+from resolve_utils import get_resolve_subtitles, set_resolve_timecode, generate_srt_content
+from schemas import (
+    SubtitleItem,
+    SuccessResponse,
+    ErrorResponse,
+    TimecodeRequest,
+    SubtitleExportRequest,
+)
 
 app = FastAPI(
     title="DaVinci Resolve Subtitle Extractor API",
@@ -25,34 +31,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Pydantic 模型定义 ---
-
-class SubtitleItem(BaseModel):
-    id: int
-    startTimecode: str = Field(..., example="01:00:02:10")
-    endTimecode: str = Field(..., example="01:00:05:15")
-    text: str = Field(..., example="这是一条字幕。")
-
-class SuccessResponse(BaseModel):
-    status: str = "success"
-    data: List[SubtitleItem]
-
-class ErrorResponse(BaseModel):
-    status: str = "error"
-    message: str
-    code: str
-
-from enum import Enum
-
-class JumpToOptions(str, Enum):
-    start = "start"
-    end = "end"
-    middle = "middle"
-
-class TimecodeRequest(BaseModel):
-    in_point: str = Field(..., example="01:00:00:00", description="入点时间码，格式为 HH:MM:SS:FF")
-    out_point: str = Field(..., example="01:00:10:00", description="出点时间码，格式为 HH:MM:SS:FF")
-    jump_to: JumpToOptions = Field(..., description="跳转位置，可选值为 'start', 'end', 'middle'")
+# (Pydantic模型已移至 schemas.py)
 
 
 # --- API 端点 ---
@@ -119,7 +98,7 @@ def get_subtitles():
     status, result = get_resolve_subtitles()
 
     if status == "success":
-        return {"status": "success", "data": result}
+        return {"status": "success", "frameRate": result.get("frameRate"), "data": result.get("data")}
     
     # 处理来自 resolve_utils 的错误
     error_code = result.get("code", "unknown_error")
@@ -139,3 +118,9 @@ def get_subtitles():
 @app.get("/", include_in_schema=False)
 def read_root():
     return {"message": "Welcome to the DaVinci Resolve Subtitle Extractor API!"}
+
+
+@app.post("/api/v1/export/srt", tags=["Export"], summary="导出SRT字幕文件")
+def export_subtitles_as_srt(request: SubtitleExportRequest):
+    srt_content = generate_srt_content(request)
+    return Response(content=srt_content, media_type="text/plain")

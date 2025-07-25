@@ -106,12 +106,12 @@ def get_resolve_subtitles():
     # 3. 访问字幕轨道
     subtitle_track_count = timeline.GetTrackCount("subtitle")
     if subtitle_track_count == 0:
-        return "success", [] # 没有字幕轨道是正常情况，返回空列表
+        return "success", {"frameRate": frame_rate, "data": []}
 
     # 假设我们总是从第一个字幕轨道提取
     subtitle_items = timeline.GetItemListInTrack("subtitle", 1)
     if not subtitle_items:
-        return "success", [] # 字幕轨道为空是正常情况，返回空列表
+        return "success", {"frameRate": frame_rate, "data": []}
 
     # 4. 遍历字幕条目并提取信息
     extracted_data = []
@@ -132,7 +132,7 @@ def get_resolve_subtitles():
         }
         extracted_data.append(subtitle_entry)
         
-    return "success", extracted_data
+    return "success", {"frameRate": frame_rate, "data": extracted_data}
 
 from timecode_utils import timecode_to_frames, frames_to_timecode
 
@@ -186,3 +186,42 @@ def set_resolve_timecode(in_point: str, out_point: str, jump_to: str):
     except Exception as e:
         logging.error(f"设置时间码时出错: {e}", exc_info=True)
         return "error", {"code": "set_timecode_failed", "message": f"设置时间码时出错: {e}"}
+from schemas import SubtitleExportRequest
+
+def frames_to_srt_timecode(frames: int, frame_rate: float) -> str:
+    """Converts frame count to HH:MM:SS,ms SRT timecode format."""
+    if frame_rate == 0:
+        return "00:00:00,000"
+    
+    total_seconds = frames / frame_rate
+    hours = int(total_seconds / 3600)
+    minutes = int((total_seconds % 3600) / 60)
+    seconds = int(total_seconds % 60)
+    milliseconds = int((total_seconds - int(total_seconds)) * 1000)
+    
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d},{milliseconds:03d}"
+
+def generate_srt_content(request: SubtitleExportRequest) -> str:
+    """
+    Generates a string in SRT format from a list of subtitle objects.
+    """
+    srt_blocks = []
+    frame_rate = request.frameRate
+
+    for index, subtitle in enumerate(request.subtitles, start=1):
+        # 1. Reconstruct clean text from diffs
+        clean_text = "".join([part.value for part in subtitle.diffs if part.type != 'removed'])
+
+        # 2. Convert timecodes to SRT format
+        start_frames = timecode_to_frames(subtitle.startTimecode, frame_rate)
+        end_frames = timecode_to_frames(subtitle.endTimecode, frame_rate)
+
+        start_srt_time = frames_to_srt_timecode(start_frames, frame_rate)
+        end_srt_time = frames_to_srt_timecode(end_frames, frame_rate)
+
+        # 3. Assemble the SRT block
+        srt_block = f"{index}\n{start_srt_time} --> {end_srt_time}\n{clean_text}"
+        srt_blocks.append(srt_block)
+
+    # 4. Join all blocks with double newlines
+    return "\n\n".join(srt_blocks)
