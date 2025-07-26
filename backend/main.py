@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Union
 
-from resolve_utils import get_resolve_subtitles, set_resolve_timecode, generate_srt_content
+from resolve_utils import get_resolve_subtitles, set_resolve_timecode, generate_srt_content, export_to_davinci
 from schemas import (
     SubtitleItem,
     SuccessResponse,
@@ -120,3 +120,32 @@ def read_root():
 def export_subtitles_as_srt(request: SubtitleExportRequest):
     srt_content = generate_srt_content(request)
     return Response(content=srt_content, media_type="text/plain")
+
+
+@app.post("/api/v1/export/davinci", tags=["Export"], summary="直接导出字幕到DaVinci Resolve时间线")
+def export_subtitles_to_davinci(request: SubtitleExportRequest):
+    """
+    ## 功能:
+    - 接收包含字幕数据的POST请求。
+    - 调用 `export_to_davinci` 函数，该函数会：
+        1. 生成一个临时的SRT文件。
+        2. 将该文件导入到DaVinci Resolve的媒体池中。
+        3. 将导入的字幕媒体项附加到当前时间线。
+        4. 清理临时文件。
+
+    ## 请求体:
+    - **frameRate (float):** 时间线的帧率。
+    - **subtitles (List[SubtitleItem]):** 包含字幕条目的列表。
+
+    ## 返回:
+    - **成功 (200):** 返回成功信息。
+    - **失败 (多种状态码):** 返回包含错误信息的JSON对象。
+    """
+    status, result = export_to_davinci(request)
+
+    if status == "success":
+        return {"status": "success", "message": result.get("message")}
+
+    error_code = result.get("code", "unknown_error")
+    error_message = result.get("message", "An unknown error occurred.")
+    handle_error(error_code, error_message)

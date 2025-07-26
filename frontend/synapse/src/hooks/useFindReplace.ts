@@ -64,24 +64,36 @@ export const useFindReplace = ({ subtitles, setSubtitles }: UseFindReplaceProps)
       regex = new RegExp(finalPattern, flags);
     } catch (error) {
       console.error("Invalid Regex:", error);
-      return; // Or handle invalid regex case appropriately
+      return;
     }
 
-    const updatedSubtitles = subtitles.map(sub => {
-      // The 'g' flag makes the regex stateful. Reset lastIndex before each test.
-      regex.lastIndex = 0;
-      if (regex.test(sub.text)) {
-        const newText = sub.text.replace(regex, replaceQuery);
-        const diffs = calculateDiff(sub.originalText, newText);
-        return { ...sub, text: newText, diffs };
-      }
-      return sub;
+    setSubtitles(currentSubtitles => {
+      const updatedSubtitles = currentSubtitles.map(sub => {
+        const currentText = sub.diffs
+          .filter(p => p.type !== 'removed')
+          .map(p => p.value)
+          .join('');
+        
+        regex.lastIndex = 0;
+        if (!regex.test(currentText)) {
+          return sub;
+        }
+
+        const newText = currentText.replace(regex, replaceQuery);
+        const finalDiffs = calculateDiff(sub.originalText, newText);
+
+        return {
+          ...sub,
+          text: newText,
+          diffs: finalDiffs,
+        };
+      });
+      return updatedSubtitles;
     });
 
-    setSubtitles(updatedSubtitles);
     setSearchQuery('');
     setReplaceQuery('');
-  }, [subtitles, setSubtitles, searchQuery, replaceQuery, matchCase, matchWholeWord, useRegex]);
+  }, [setSubtitles, searchQuery, replaceQuery, matchCase, matchWholeWord, useRegex]);
 
   return {
     searchQuery,

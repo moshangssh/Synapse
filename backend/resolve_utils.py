@@ -2,7 +2,9 @@ import sys
 import os
 import logging
 import importlib.util
-from timecode_utils import format_timecode
+import tempfile
+from timecode import Timecode
+from timecode_utils import format_timecode, timecode_to_frames, frames_to_srt_timecode
 
 # 配置日志记录
 log_file = os.path.join(os.path.dirname(__file__), 'resolve_connection.log')
@@ -219,7 +221,7 @@ def set_resolve_timecode(in_point: str, out_point: str, jump_to: str):
 from schemas import SubtitleExportRequest
 
 
-def generate_srt_content(request: SubtitleExportRequest) -> str:
+def generate_srt_content(request: SubtitleExportRequest, base_frames: int = 0) -> str:
     """
     Generates a string in SRT format from a list of subtitle objects.
     """
@@ -230,16 +232,121 @@ def generate_srt_content(request: SubtitleExportRequest) -> str:
         # 1. Reconstruct clean text from diffs
         clean_text = "".join([part.value for part in subtitle.diffs if part.type != 'removed'])
 
-        # 2. Convert timecodes to SRT format
-        start_frames = timecode_to_frames(subtitle.startTimecode, frame_rate)
-        end_frames = timecode_to_frames(subtitle.endTimecode, frame_rate)
+        # 2. Convert timecodes to relative frames
+        start_frames = timecode_to_frames(subtitle.startTimecode, frame_rate) - base_frames
+        end_frames = timecode_to_frames(subtitle.endTimecode, frame_rate) - base_frames
 
-        start_srt_time = frames_to_srt_timecode(start_frames, frame_rate)
-        end_srt_time = frames_to_srt_timecode(end_frames, frame_rate)
+        # 3. Format frames back to SRT timecode
+        start_srt_time = frames_to_srt_timecode(max(0, start_frames), frame_rate)
+        end_srt_time = frames_to_srt_timecode(max(0, end_frames), frame_rate)
 
-        # 3. Assemble the SRT block
+        # 4. Assemble the SRT block
         srt_block = f"{index}\n{start_srt_time} --> {end_srt_time}\n{clean_text}"
         srt_blocks.append(srt_block)
 
-    # 4. Join all blocks with double newlines
+    # 5. Join all blocks with double newlines
     return "\n\n".join(srt_blocks)
+
+
+def export_to_davinci(request: SubtitleExportRequest):
+    """
+    Exports subtitles to DaVinci Resolve by creating a temporary SRT file,
+    importing it, and adding it to the timeline.
+    """
+    resolve, error = _connect_to_resolve()
+    if error:
+        return "error", error
+
+    projectManager = resolve.GetProjectManager()
+    project = projectManager.GetCurrentProject()
+    if not project:
+        return "error", {"code": "no_project_open", "message": "未找到当前打开的项目。"}
+
+    media_pool = project.GetMediaPool()
+    if not media_pool:
+        return "error", {"code": "no_media_pool", "message": "无法获取媒体池。"}
+
+    timeline, frame_rate, error = _get_current_timeline()
+    if error:
+        return "error", error
+
+    start_tc_str = timeline.GetStartTimecode()
+    base_frames = timecode_to_frames(start_tc_str, frame_rate)
+    
+    srt_content = generate_srt_content(request, base_frames)
+    temp_file_path = ""
+    try:
+        # Create a temporary file to store the SRT content
+        with tempfile.NamedTemporaryFile(mode='w+', suffix='.srt', delete=False, encoding='utf-8') as temp_file:
+            temp_file_path = temp_file.name
+            temp_file.write(srt_content)
+            temp_file.flush() # Ensure content is written to disk
+        
+        logging.info(f"临时 SRT 文件已创建: {temp_file_path}")
+
+        # Import the temporary SRT file into the media pool
+        media_items = media_pool.ImportMedia([temp_file_path])
+        if not media_items:
+            logging.error("导入媒体文件失败。")
+            return "error", {"code": "import_failed", "message": "导入媒体文件失败。"}
+        
+        # The API returns a list, we need the first item
+        media_item = media_items[0]
+        
+        timeline = project.GetCurrentTimeline()
+        if not timeline:
+            return "error", {"code": "no_active_timeline", "message": "项目中没有活动的（当前）时间线。"}
+
+        # 1. 显式轨道创建
+        if not timeline.AddTrack("subtitle"):
+            logging.error("无法创建新的字幕轨道。")
+            return "error", {"message": "Failed to create a new subtitle track.", "code": "create_track_failed"}
+        
+        target_track_index = timeline.GetTrackCount("subtitle")
+        logging.info(f"成功创建新的字幕轨道，索引为: {target_track_index}")
+
+        # 2. 轨道隔离与状态保存
+        original_track_states = {}
+        total_subtitle_tracks = timeline.GetTrackCount("subtitle")
+        
+        # 先保存所有轨道的原始状态
+        for i in range(1, total_subtitle_tracks + 1):
+            original_track_states[i] = timeline.GetIsTrackEnabled("subtitle", i)
+
+        try:
+            # 禁用所有其他轨道，并显式启用目标轨道
+            for i in range(1, total_subtitle_tracks + 1):
+                if i != target_track_index:
+                    timeline.SetTrackEnable("subtitle", i, False)
+            timeline.SetTrackEnable("subtitle", target_track_index, True)
+            logging.info(f"轨道隔离完成：仅启用目标轨道 {target_track_index}")
+
+            # 3. 精确定位插入点
+            if request.subtitles:
+                first_subtitle_tc = request.subtitles[0].startTimecode
+                timeline.SetCurrentTimecode(first_subtitle_tc)
+                logging.info(f"播放头已移动到: {first_subtitle_tc}")
+
+            # 4. 执行“粘贴”操作
+            # 此时，因为只有一个字幕轨道是启用的，所以字幕会精确地添加到该轨道
+            if not media_pool.AppendToTimeline([media_item]):
+                logging.warning("AppendToTimeline 返回了 false 或 None，但这可能是预期的行为。")
+
+        finally:
+            # 根据用户要求，不再恢复轨道的原始状态，以保持新轨道为激活状态。
+            pass
+
+        logging.info("成功将字幕导入并附加到时间线。")
+        return "success", {"message": "成功将字幕导出至 DaVinci Resolve。"}
+
+    except Exception as e:
+        logging.error(f"导出至 DaVinci Resolve 时出错: {e}", exc_info=True)
+        return "error", {"code": "export_error", "message": f"导出至 DaVinci Resolve 时出错: {e}"}
+    finally:
+        # Clean up the temporary file
+        if temp_file_path and os.path.exists(temp_file_path):
+            try:
+                os.remove(temp_file_path)
+                logging.info(f"临时文件已删除: {temp_file_path}")
+            except OSError as e:
+                logging.error(f"删除临时文件时出错: {e}", exc_info=True)

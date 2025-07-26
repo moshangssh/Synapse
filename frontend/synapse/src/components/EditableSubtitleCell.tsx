@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { TableCell, TextField } from '@mui/material';
 import DiffHighlighter from './DiffHighlighter';
 import { Subtitle } from '../types';
@@ -19,6 +19,13 @@ const EditableSubtitleCell: React.FC<EditableSubtitleCellProps> = ({
 }) => {
   const [editText, setEditText] = useState(row.text);
   const escapePressedRef = useRef(false);
+
+  useEffect(() => {
+    // Only update from prop if not currently editing that specific cell
+    if (editingId !== row.id) {
+      setEditText(row.text);
+    }
+  }, [row.text, editingId, row.id]);
 
   const isEditing = editingId === row.id;
 

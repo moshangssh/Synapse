@@ -20,6 +20,7 @@ import SubtitleTable from "./components/SubtitleTable";
 import ConnectionStatus from "./components/ConnectionStatus";
 import FindReplace from "./components/FindReplace";
 import { useFindReplace } from "./hooks/useFindReplace";
+import useNotifier from "./hooks/useNotifier";
 import { DiffPart } from "./components/DiffHighlighter";
 import { diffChars } from "diff";
 import { Subtitle } from "./types";
@@ -40,6 +41,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [jumpTo, setJumpTo] = useState<JumpTo>("start");
   const [frameRate, setFrameRate] = useState<number>(24);
+  const notify = useNotifier();
 
   const {
     searchQuery,
@@ -153,6 +155,41 @@ function App() {
     }
   };
 
+  const handleExportToDavinci = async () => {
+    const subtitlesToExport = subtitles.map(({ id, startTimecode, endTimecode, diffs }) => ({
+      id,
+      startTimecode,
+      endTimecode,
+      diffs,
+    }));
+
+    const requestBody = {
+      frameRate: frameRate,
+      subtitles: subtitlesToExport,
+    };
+
+    try {
+      const response = await fetch(
+        "http://127.0.0.1:8000/api/v1/export/davinci",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "导出至达芬奇失败");
+      }
+
+      notify.success("成功导出至达芬奇！");
+    } catch (error: any) {
+      console.error("导出至达芬奇错误:", error);
+      notify.error(error.message || "导出至达芬奇时发生未知错误");
+    }
+  };
+
   return (
     <ThemeProvider theme={lightTheme}>
       <CssBaseline />
@@ -206,6 +243,14 @@ function App() {
               disabled={subtitles.length === 0}
             >
               导出SRT
+            </Button>
+            <Button
+              variant="contained"
+              color="secondary"
+              onClick={handleExportToDavinci}
+              disabled={subtitles.length === 0}
+            >
+              导出至达芬奇
             </Button>
           </Box>
         </Box>

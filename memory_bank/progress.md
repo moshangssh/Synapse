@@ -357,3 +357,91 @@
 *   **状态:** ✅ 成功
 *   **完成时间:** 2025-07-26
 *   **耗时:** 约45分钟 (包含方案调整)
+
+
+---
+
+### 任务：实现“导出字幕至达芬奇”功能
+*   **ID:** `a7b3c1d9-8e5f-4a2b-9c1d-6f3a2b1c8e7f`
+*   **描述:** 实现了一个完整的新功能，允许用户将字幕直接导出并添加到DaVinci Resolve的当前时间线中。
+*   **完成情况:**
+    *   **后端 (code-developer):**
+        *   在 `backend/main.py` 中创建了新的 `POST /api/v1/export/davinci` 端点。
+        *   在 `backend/resolve_utils.py` 中实现了 `export_to_davinci` 核心逻辑，包括临时文件处理和对Resolve API的调用。
+    *   **前端 (code-developer):**
+        *   在 `frontend/synapse/src/App.tsx` 中添加了“导出至达芬奇”按钮。
+        *   实现了 `handleExportToDavinci` 函数来调用新的后端API并处理用户反馈。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-07-26
+*   **耗时:** 约25分钟
+
+
+---
+
+### 任务：修复导出至达芬奇的时间码翻倍问题
+*   **ID:** `f8b4c1d9-8e5f-4a2b-9c1d-6f3a2b1c8e7f` (关联 `a7b3c1d9-8e5f-4a2b-9c1d-6f3a2b1c8e7f`)
+*   **描述:** 解决了在将字幕导出到DaVinci Resolve时，因时间码基准不一致而导致的时间码翻倍（向后偏移一小时）的问题。
+*   **完成情况:**
+    *   **分析与方案设计 (NexusCore):** 成功定位问题根源在于绝对时间码与相对时间码的混淆。设计了通过计算相对时间码来解决问题的最终方案。
+    *   **代码实现 (code-developer):**
+        *   在 `backend/timecode_utils.py` 中添加了 `timecode_str_to_frames` 和 `srt_time_format` 两个新的辅助函数。
+        *   修改了 `backend/resolve_utils.py` 中的 `generate_srt_content` 和 `export_to_davinci` 函数，以实现相对时间码的计算和应用。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-07-26
+*   **耗时:** 约20分钟 (包含分析、方案迭代和执行)
+
+
+---
+
+### 任务：优化“导出至达芬奇”的用户体验
+*   **ID:** `c3d4e5f6-7g8h-9i0j-k1l2-m3n4o5p6q7r8` (关联 `a7b3c1d9-8e5f-4a2b-9c1d-6f3a2b1c8e7f`)
+*   **描述:** 根据用户反馈，修改了 `export_to_davinci` 函数的行为。删除了恢复轨道原始状态的逻辑，使得新导入的字幕轨道在操作完成后保持激活状态，从而优化了用户体验。
+*   **完成情况:**
+    *   **代码实现 (NexusCore):** 直接修改了 `backend/resolve_utils.py`，移除了 `finally` 块中的轨道状态恢复代码。
+*   **完成者:** NexusCore (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-07-26
+*   **耗时:** 约5分钟
+
+
+---
+
+### 任务：更新FindReplace功能单元测试
+*   **ID:** `fbb952eb-b752-46d2-bba9-421333db0d69`
+*   **描述:** 为“全部替换”功能的UI更新修复添加单元测试。
+*   **完成情况:**
+    *   **代码实现 (code-developer):** 尝试添加单元测试，但遭遇了持续的 `EMFILE: too many open files` 系统错误，在尝试多种解决方案后仍无法解决。为避免留下问题代码，已将尝试添加的测试文件删除。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ❌ 失败
+*   **备注:** 任务失败并非由于代码逻辑错误，而是由于测试运行环境的文件句柄限制问题。核心的Bug修复本身是成功的。
+*   **完成时间:** 2025-07-26
+*   **耗时:** 约30分钟 (包含问题排查)
+
+
+---
+
+### 任务：修复EditableSubtitleCell状态同步Bug
+*   **ID:** `296230dc-0f84-47be-a10c-313fe7c27e3b`
+*   **描述:** 解决了在执行“全部替换”操作后，因`EditableSubtitleCell`组件内部状态未与外部prop同步而导致的UI不更新问题。
+*   **完成情况:**
+    *   **代码实现 (code-developer):** 在`frontend/synapse/src/components/EditableSubtitleCell.tsx`中成功添加了`useEffect` hook，以监听`row.text` prop的变化并同步内部状态。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-07-26
+*   **耗时:** 约5分钟
+
+
+---
+
+### 任务：合并 `timecode_utils.py` 中的重复函数
+*   **ID:** `e5d1c3b9-a2f8-4b1f-9e4a-5f8b9a1b2c3d`
+*   **描述:** 将 `backend/timecode_utils.py` 文件中功能完全相同的 `timecode_str_to_frames` 和 `timecode_to_frames` 函数合并为一个统一的 `timecode_to_frames` 函数。
+*   **完成情况:**
+    *   **代码重构 (code-developer):** 成功删除了冗余函数，并更新了其在 `backend/resolve_utils.py` 中的所有引用。
+    *   **错误修复 (code-developer):** 在重构过程中，成功定位并修复了因此产生的 `ImportError` 和 `NameError`，并进行了深刻反思。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-07-26
+*   **耗时:** 约15分钟 (包含多次错误排查和修复)

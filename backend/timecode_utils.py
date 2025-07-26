@@ -14,7 +14,7 @@ def format_timecode(frame, frame_rate):
     return str(tc)
 
 def timecode_to_frames(tc_str: str, frame_rate: float) -> int:
-    """Converts HH:MM:SS:FF to frame count."""
+    """Converts a timecode string (e.g., '01:00:00:00') to total frames."""
     tc = Timecode(frame_rate, tc_str)
     return tc.frames - 1
 
