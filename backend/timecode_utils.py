@@ -21,3 +21,16 @@ def timecode_to_frames(tc_str: str, frame_rate: float) -> int:
 def frames_to_timecode(frames: int, frame_rate: float) -> str:
     """Converts frame count to HH:MM:SS:FF."""
     return format_timecode(frames, frame_rate)
+
+def frames_to_srt_timecode(frames: int, frame_rate: float) -> str:
+    """Converts frame count to HH:MM:SS,ms SRT timecode format."""
+    if frame_rate == 0:
+        return "00:00:00,000"
+    
+    total_seconds = frames / frame_rate
+    hours = int(total_seconds / 3600)
+    minutes = int((total_seconds % 3600) / 60)
+    seconds = int(total_seconds % 60)
+    milliseconds = int((total_seconds - int(total_seconds)) * 1000)
+    
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d},{milliseconds:03d}"

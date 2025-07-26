@@ -18,23 +18,17 @@ import {
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import SubtitleTable from "./components/SubtitleTable";
 import ConnectionStatus from "./components/ConnectionStatus";
+import FindReplace from "./components/FindReplace";
+import { useFindReplace } from "./hooks/useFindReplace";
 import { DiffPart } from "./components/DiffHighlighter";
 import { diffChars } from "diff";
+import { Subtitle } from "./types";
 
 const lightTheme = createTheme({
   palette: {
     mode: "light",
   },
 });
-
-interface Subtitle {
-  id: number;
-  startTimecode: string;
-  endTimecode: string;
-  text: string;
-  originalText: string;
-  diffs: DiffPart[];
-}
 
 type Status = "connected" | "connecting" | "error" | "initial";
 type JumpTo = "start" | "end" | "middle";
@@ -45,8 +39,24 @@ function App() {
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [jumpTo, setJumpTo] = useState<JumpTo>("start");
-  const [searchQuery, setSearchQuery] = useState("");
   const [frameRate, setFrameRate] = useState<number>(24);
+
+  const {
+    searchQuery,
+    replaceQuery,
+    showReplace,
+    matchCase,
+    matchWholeWord,
+    useRegex,
+    handleSearchChange,
+    handleReplaceChange,
+    toggleShowReplace,
+    toggleMatchCase,
+    toggleMatchWholeWord,
+    toggleUseRegex,
+    handleReplaceAll,
+    filteredSubtitles,
+  } = useFindReplace({ subtitles, setSubtitles });
 
   const handleJumpToChange = (event: SelectChangeEvent<JumpTo>) => {
     setJumpTo(event.target.value as JumpTo);
@@ -82,14 +92,6 @@ function App() {
       setLoading(false);
     }
   };
-
-  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(event.target.value);
-  };
-
-  const filteredSubtitles = subtitles.filter((subtitle) =>
-    subtitle.text.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   const handleSubtitleChange = useCallback((id: number, newText: string) => {
     setSubtitles((prevSubtitles) =>
@@ -175,14 +177,6 @@ function App() {
             message={errorMessage}
           />
           <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-            <TextField
-              label="搜索字幕"
-              variant="outlined"
-              size="small"
-              value={searchQuery}
-              onChange={handleSearchChange}
-              sx={{ minWidth: 200 }}
-            />
             <FormControl sx={{ m: 1, minWidth: 120 }} size="small">
               <InputLabel id="jump-to-select-label">跳转模式</InputLabel>
               <Select
@@ -214,6 +208,23 @@ function App() {
               导出SRT
             </Button>
           </Box>
+        </Box>
+        <Box sx={{ mb: 2 }}>
+          <FindReplace
+            searchQuery={searchQuery}
+            replaceQuery={replaceQuery}
+            showReplace={showReplace}
+            matchCase={matchCase}
+            matchWholeWord={matchWholeWord}
+            useRegex={useRegex}
+            onSearchChange={handleSearchChange}
+            onReplaceChange={handleReplaceChange}
+            onReplaceAll={handleReplaceAll}
+            onToggleShowReplace={toggleShowReplace}
+            onToggleMatchCase={toggleMatchCase}
+            onToggleMatchWholeWord={toggleMatchWholeWord}
+            onToggleUseRegex={toggleUseRegex}
+          />
         </Box>
         <SubtitleTable
           subtitles={filteredSubtitles}

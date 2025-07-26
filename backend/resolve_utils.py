@@ -15,6 +15,9 @@ logging.basicConfig(
     ]
 )
 
+# 全局变量来缓存 Resolve 连接
+_resolve_connection = None
+
 def _get_resolve_bmd():
     """
     Dynamically loads the DaVinci Resolve script module from its specific path
@@ -44,12 +47,23 @@ def _get_resolve_bmd():
         logging.error(f"Failed to import DaVinci Resolve script module from {script_module_path}: {e}", exc_info=True)
         return None
 
-def _connect_to_resolve():
+def _connect_to_resolve(force_reconnect=False):
     """
     Loads the DaVinci Resolve script module and connects to the Resolve application.
+    It will cache the connection globally to avoid reconnecting on every call.
+    
+    Args:
+        force_reconnect (bool): If True, it will ignore the cached connection
+                                and establish a new one.
+
     Returns a tuple (resolve, error), where resolve is the connection object
     and error is a dictionary with 'code' and 'message' if connection fails.
     """
+    global _resolve_connection
+    if _resolve_connection and not force_reconnect:
+        logging.info("使用缓存的 DaVinci Resolve 连接。")
+        return _resolve_connection, None
+
     dvr_script = _get_resolve_bmd()
     if not dvr_script:
         logging.error("DaVinci Resolve Scripting API module not found.")
@@ -67,12 +81,61 @@ def _connect_to_resolve():
         resolve = dvr_script.scriptapp("Resolve")
         if not resolve:
             logging.error("无法连接到 DaVinci Resolve。请确保 Resolve 正在运行。")
+            _resolve_connection = None # Clear connection on failure
             return None, {"code": "resolve_not_running", "message": "无法连接到 DaVinci Resolve。请确保 Resolve 正在运行。"}
+        
         logging.info("成功连接到 DaVinci Resolve。")
+        _resolve_connection = resolve # Cache the connection
         return resolve, None
     except Exception as e:
         logging.error(f"连接 DaVinci Resolve 时发生未知错误: {e}", exc_info=True)
+        _resolve_connection = None # Clear connection on exception
         return None, {"code": "connection_error", "message": f"连接 DaVinci Resolve 时发生未知错误: {e}"}
+
+
+def _get_current_timeline():
+    """
+    Connects to Resolve and retrieves the current timeline object and its frame rate.
+    It will attempt to reconnect if the connection is lost.
+
+    Returns:
+        A tuple (timeline, frame_rate, error), where timeline is the DaVinci Resolve
+        timeline object, frame_rate is a float, and error is a dictionary
+        with 'code' and 'message' if an error occurs.
+    """
+    resolve, error = _connect_to_resolve()
+    if error:
+        return None, None, error
+
+    try:
+        # First, try to get the project manager to check if the connection is alive
+        projectManager = resolve.GetProjectManager()
+        project = projectManager.GetCurrentProject()
+        if not project:
+            return None, None, {"code": "no_project_open", "message": "未找到当前打开的项目。"}
+    except Exception as e:
+        logging.warning(f"DaVinci Resolve 连接可能已断开，正在尝试重新连接... 错误: {e}")
+        resolve, error = _connect_to_resolve(force_reconnect=True)
+        if error:
+            return None, None, error
+        projectManager = resolve.GetProjectManager()
+        project = projectManager.GetCurrentProject()
+        if not project:
+            return None, None, {"code": "no_project_open", "message": "重新连接后仍未找到当前打开的项目。"}
+
+
+    timeline = project.GetCurrentTimeline()
+    if not timeline:
+        return None, None, {"code": "no_active_timeline", "message": "项目中没有活动的（当前）时间线。"}
+    
+    try:
+        frame_rate_str = timeline.GetSetting('timelineFrameRate')
+        frame_rate = float(frame_rate_str)
+    except (ValueError, TypeError, AttributeError):
+        logging.warning("无法获取时间线帧率，将使用默认值 24.0。")
+        frame_rate = 24.0 # Default to a common frame rate
+
+    return timeline, frame_rate, None
 
 
 def get_resolve_subtitles():
@@ -81,28 +144,10 @@ def get_resolve_subtitles():
     返回一个元组 (status, data), 其中 status 是 "success" 或 "error",
     data 是字幕列表或错误信息字典。
     """
-    resolve, error = _connect_to_resolve()
+    timeline, frame_rate, error = _get_current_timeline()
     if error:
         return "error", error
-
-    # 2. 获取项目和时间线
-    projectManager = resolve.GetProjectManager()
-    project = projectManager.GetCurrentProject()
-    if not project:
-        return "error", {"code": "no_project_open", "message": "未找到当前打开的项目。"}
-
-    timeline = project.GetCurrentTimeline()
-    if not timeline:
-        return "error", {"code": "no_active_timeline", "message": "项目中没有活动的（当前）时间线。"}
         
-    # 获取帧率用于时间码转换
-    try:
-        frame_rate_str = timeline.GetSetting('timelineFrameRate')
-        frame_rate = float(frame_rate_str)
-    except (ValueError, TypeError, AttributeError):
-        # Fallback if the setting is not a number or not available
-        frame_rate = 24.0 # Default to a common frame rate
-
     # 3. 访问字幕轨道
     subtitle_track_count = timeline.GetTrackCount("subtitle")
     if subtitle_track_count == 0:
@@ -134,7 +179,7 @@ def get_resolve_subtitles():
         
     return "success", {"frameRate": frame_rate, "data": extracted_data}
 
-from timecode_utils import timecode_to_frames, frames_to_timecode
+from timecode_utils import timecode_to_frames, frames_to_timecode, frames_to_srt_timecode
 
 def set_resolve_timecode(in_point: str, out_point: str, jump_to: str):
     """
@@ -149,24 +194,9 @@ def set_resolve_timecode(in_point: str, out_point: str, jump_to: str):
         一个元组 (status, data)，其中 status 是 "success" 或 "error",
         data 是成功信息或错误信息字典。
     """
-    resolve, error = _connect_to_resolve()
+    timeline, frame_rate, error = _get_current_timeline()
     if error:
         return "error", error
-
-    projectManager = resolve.GetProjectManager()
-    project = projectManager.GetCurrentProject()
-    if not project:
-        return "error", {"code": "no_project_open", "message": "未找到当前打开的项目。"}
-
-    timeline = project.GetCurrentTimeline()
-    if not timeline:
-        return "error", {"code": "no_active_timeline", "message": "项目中没有活动的（当前）时间线。"}
-
-    try:
-        frame_rate_str = timeline.GetSetting('timelineFrameRate')
-        frame_rate = float(frame_rate_str)
-    except (ValueError, TypeError, AttributeError):
-        frame_rate = 24.0
 
     target_timecode = ""
     if jump_to == "start":
@@ -188,18 +218,6 @@ def set_resolve_timecode(in_point: str, out_point: str, jump_to: str):
         return "error", {"code": "set_timecode_failed", "message": f"设置时间码时出错: {e}"}
 from schemas import SubtitleExportRequest
 
-def frames_to_srt_timecode(frames: int, frame_rate: float) -> str:
-    """Converts frame count to HH:MM:SS,ms SRT timecode format."""
-    if frame_rate == 0:
-        return "00:00:00,000"
-    
-    total_seconds = frames / frame_rate
-    hours = int(total_seconds / 3600)
-    minutes = int((total_seconds % 3600) / 60)
-    seconds = int(total_seconds % 60)
-    milliseconds = int((total_seconds - int(total_seconds)) * 1000)
-    
-    return f"{hours:02d}:{minutes:02d}:{seconds:02d},{milliseconds:03d}"
 
 def generate_srt_content(request: SubtitleExportRequest) -> str:
     """

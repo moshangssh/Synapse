@@ -12,7 +12,8 @@ if current_dir not in sys.path:
 
 # Now we can import from resolve_utils
 try:
-    from resolve_utils import _get_resolve_bmd
+    # Import the new helper function
+    from resolve_utils import _get_current_timeline
 except ImportError:
     print("Error: Could not import from 'resolve_utils'. Make sure the file exists and is in the correct path.")
     sys.exit(1)
@@ -24,40 +25,16 @@ def diagnose_subtitle_properties():
     """
     logging.info("Starting subtitle diagnosis...")
 
-    dvr_script = _get_resolve_bmd()
-    if not dvr_script:
-        logging.error("DaVinci Resolve Scripting API module could not be loaded. Diagnosis cannot continue.")
-        print("错误: 无法加载 DaVinci Resolve 脚本模块。请检查 Resolve 安装是否正确。")
+    # --- Get Timeline using the helper function ---
+    timeline, frame_rate, error = _get_current_timeline()
+
+    # --- Error Handling ---
+    if error:
+        logging.error(f"Could not get timeline. Error: {error['message']} (Code: {error['code']})")
+        print(f"错误: {error['message']}")
         return
 
-    # --- Connection Logic (reused from resolve_utils.py) ---
-    try:
-        resolve = dvr_script.scriptapp("Resolve")
-        if not resolve:
-            logging.error("Failed to connect to DaVinci Resolve. Is it running?")
-            print("错误: 无法连接到 DaVinci Resolve。请确保 Resolve 正在运行。")
-            return
-        logging.info("Successfully connected to DaVinci Resolve.")
-    except Exception as e:
-        logging.error(f"An unknown error occurred while connecting to Resolve: {e}", exc_info=True)
-        print(f"错误: 连接到 DaVinci Resolve 时发生未知错误: {e}")
-        return
-
-    # --- Project and Timeline Logic ---
-    projectManager = resolve.GetProjectManager()
-    project = projectManager.GetCurrentProject()
-    if not project:
-        logging.warning("No project is currently open in DaVinci Resolve.")
-        print("提示: DaVinci Resolve 中没有打开的项目。")
-        return
-
-    timeline = project.GetCurrentTimeline()
-    if not timeline:
-        logging.warning(f"Project '{project.GetName()}' has no active timeline.")
-        print(f"提示: 项目 '{project.GetName()}' 中没有活动的（当前）时间线。")
-        return
-
-    logging.info(f"Successfully accessed Project: '{project.GetName()}' and Timeline: '{timeline.GetName()}'")
+    logging.info(f"Successfully accessed Timeline: '{timeline.GetName()}' with Frame Rate: {frame_rate}")
 
     # --- Subtitle Track and Item Logic ---
     subtitle_track_count = timeline.GetTrackCount("subtitle")
@@ -79,7 +56,7 @@ def diagnose_subtitle_properties():
 
     # --- Get and Print Properties of the First Item ---
     # Get the first item from the list
-    first_item = subtitle_items
+    first_item = subtitle_items[0]
     if not first_item:
         logging.warning("The first subtitle item is invalid or None.")
         print("提示: 字幕列表中的第一个项目无效。")

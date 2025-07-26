@@ -27,3 +27,4 @@ env
 
 # Environment variables
 .env.local
+todo.md

@@ -2,7 +2,8 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { vi } from 'vitest';
 import '@testing-library/jest-dom';
-import SubtitleTable, { Subtitle } from './SubtitleTable';
+import SubtitleTable from './SubtitleTable';
+import { Subtitle } from '../types';
 
 // Mock the useNotifier hook
 vi.mock('../hooks/useNotifier', () => ({
@@ -39,8 +40,8 @@ vi.mock('react-window', () => ({
 
 describe('SubtitleTable', () => {
   const mockSubtitles: Subtitle[] = [
-    { id: 1, startTimecode: '00:00:01,000', endTimecode: '00:00:03,000', text: 'Hello world', diffs: [{ type: 'normal', value: 'Hello world' }] },
-    { id: 2, startTimecode: '00:00:04,000', endTimecode: '00:00:06,000', text: 'This is a test', diffs: [{ type: 'normal', value: 'This is a test' }] },
+    { id: 1, startTimecode: '00:00:01,000', endTimecode: '00:00:03,000', text: 'Hello world', originalText: 'Hello world', diffs: [{ type: 'normal', value: 'Hello world' }] },
+    { id: 2, startTimecode: '00:00:04,000', endTimecode: '00:00:06,000', text: 'This is a test', originalText: 'This is a test', diffs: [{ type: 'normal', value: 'This is a test' }] },
   ];
 
   const mockOnSubtitleChange = vi.fn();
@@ -60,6 +61,14 @@ describe('SubtitleTable', () => {
     render(<SubtitleTable subtitles={mockSubtitles} jumpTo="start" onSubtitleChange={mockOnSubtitleChange} />);
     expect(screen.getByText('Hello world')).toBeInTheDocument();
     expect(screen.getByText('This is a test')).toBeInTheDocument();
+  });
+
+  it('renders a filtered list of subtitles correctly', () => {
+    const filteredSubtitles = [mockSubtitles[0]]; // Only "Hello world"
+    render(<SubtitleTable subtitles={filteredSubtitles} jumpTo="start" onSubtitleChange={mockOnSubtitleChange} />);
+    
+    expect(screen.getByText('Hello world')).toBeInTheDocument();
+    expect(screen.queryByText('This is a test')).not.toBeInTheDocument();
   });
 
   it('enters edit mode on double click', async () => {

@@ -34,6 +34,22 @@ app.add_middleware(
 # (Pydantic模型已移至 schemas.py)
 
 
+# --- 错误处理 ---
+
+def handle_error(error_code: str, error_message: str):
+    """根据错误代码，抛出相应的HTTPException。"""
+    if error_code in ["resolve_not_running", "connection_error"]:
+        raise HTTPException(status_code=503, detail={"status": "error", "message": error_message, "code": error_code})
+    elif error_code in ["no_project_open", "no_active_timeline"]:
+        raise HTTPException(status_code=404, detail={"status": "error", "message": error_message, "code": error_code})
+    elif error_code == "set_timecode_failed":
+        raise HTTPException(status_code=400, detail={"status": "error", "message": error_message, "code": error_code})
+    elif error_code == "dvr_script_not_found":
+        raise HTTPException(status_code=500, detail={"status": "error", "message": error_message, "code": error_code})
+    else:
+        raise HTTPException(status_code=500, detail={"status": "error", "message": error_message, "code": error_code})
+
+
 # --- API 端点 ---
 
 @app.post("/api/v1/timeline/timecode",
@@ -66,17 +82,7 @@ def set_timecode(request: TimecodeRequest):
 
     error_code = result.get("code", "unknown_error")
     error_message = result.get("message", "An unknown error occurred.")
-
-    if error_code == "resolve_not_running" or error_code == "connection_error":
-        raise HTTPException(status_code=503, detail={"status": "error", "message": error_message, "code": error_code})
-    elif error_code == "no_project_open":
-        raise HTTPException(status_code=404, detail={"status": "error", "message": error_message, "code": error_code})
-    elif error_code == "no_active_timeline":
-        raise HTTPException(status_code=404, detail={"status": "error", "message": error_message, "code": error_code})
-    elif error_code == "set_timecode_failed":
-        raise HTTPException(status_code=400, detail={"status": "error", "message": error_message, "code": error_code})
-    else:
-        raise HTTPException(status_code=500, detail={"status": "error", "message": error_message, "code": error_code})
+    handle_error(error_code, error_message)
 
 
 @app.get("/api/v1/subtitles",
@@ -103,17 +109,7 @@ def get_subtitles():
     # 处理来自 resolve_utils 的错误
     error_code = result.get("code", "unknown_error")
     error_message = result.get("message", "An unknown error occurred.")
-
-    if error_code == "resolve_not_running" or error_code == "connection_error":
-        raise HTTPException(status_code=503, detail={"status": "error", "message": error_message, "code": error_code})
-    elif error_code == "no_project_open":
-        raise HTTPException(status_code=404, detail={"status": "error", "message": error_message, "code": error_code})
-    elif error_code == "no_active_timeline":
-        raise HTTPException(status_code=404, detail={"status": "error", "message": error_message, "code": error_code})
-    elif error_code == "dvr_script_not_found":
-        raise HTTPException(status_code=500, detail={"status": "error", "message": error_message, "code": error_code})
-    else:
-        raise HTTPException(status_code=500, detail={"status": "error", "message": error_message, "code": error_code})
+    handle_error(error_code, error_message)
 
 @app.get("/", include_in_schema=False)
 def read_root():

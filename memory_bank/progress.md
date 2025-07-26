@@ -247,3 +247,113 @@
 *   **状态:** ✅ 成功
 *   **完成时间:** 2025-07-25
 *   **耗时:** 约1小时30分钟 (包含多次方案迭代)
+
+---
+
+### 任务：在前端实现查找与替换功能
+*   **ID:** `f5d6b1c3-9e3a-4b2f-8c1d-7a6e5f4d3b2a`
+*   **描述:** 在前端应用中添加了完整的查找与替换功能，包括UI组件、状态管理和业务逻辑。
+*   **完成情况:**
+*   **组件创建 (code-developer):** 创建了独立的 `FindReplace.tsx` 组件和相应的单元测试。
+*   **逻辑封装 (code-developer):** 创建了 `useFindReplace.ts` 自定义 Hook，将所有相关的状态和逻辑进行了封装，提高了代码的模块化和复用性。
+*   **类型定义 (code-developer):** 创建了 `types.ts` 文件来共享 `Subtitle` 接口。
+*   **组件集成 (code-developer):** 在 `App.tsx` 中成功集成了 `FindReplace` 组件，并实现了行高亮功能。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-07-25
+*   **耗时:** 约35分钟
+
+---
+
+### 任务：恢复并整合查找功能
+*   **ID:** `a9e1b8d2-4f6c-4a1e-8b3a-2c9d8e7f6a5b`
+*   **描述:** 恢复了被意外覆盖的“仅查找”功能，并将其与“查找与替换”功能无缝整合。
+*   **完成情况:**
+    *   **分析 (code-developer):** 确认了“仅查找”的逻辑（`searchQuery` 和 `filteredSubtitles`）已存在于 `useFindReplace` Hook 中。
+    *   **UI微调 (code-developer):** 调整了 `FindReplace.tsx` 组件的UI，通过明确的提示文字和布局，让用户可以清晰地同时使用实时筛选和高级查找/替换功能。
+    *   **集成验证 (code-developer):** 确认了 `App.tsx` 正确使用了 `filteredSubtitles` prop，将筛选后的结果传递给字幕表格。
+*   **完成者:** code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-07-25
+*   **耗时:** 约15分钟
+
+
+---
+**任务名称:** 分析后端代码库
+**任务描述:** 分析 `backend/` 目录下的所有 `.py` 文件，寻找重复的代码和可复用的逻辑。
+**任务完成情况:** 已完成
+**任务完成时间:** 2025-07-25 17:18:21
+**任务完成者:** code-developer
+**任务完成者角色:** 💻 代码开发者
+**任务状态:** 成功
+**任务耗时:** (由 `code-developer` 模式估算)
+
+
+---
+
+### 任务：重构时间码函数并优化 Resolve 连接逻辑
+*   **描述:** 将时间码转换相关的逻辑 (`frames_to_srt_timecode`) 集中到 `timecode_utils.py` 中，并优化 `resolve_utils.py` 的 DaVinci Resolve 连接机制，实现连接复用和自动重连。
+*   **完成情况:**
+    *   **代码重构 (code-developer):** 成功将 `frames_to_srt_timecode` 函数从 `resolve_utils.py` 移动到 `timecode_utils.py`。
+    *   **连接优化 (code-developer):** 成功在 `resolve_utils.py` 中实现了全局连接缓存和自动重连逻辑。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-07-25
+*   **耗时:** 约55分钟 (包含多次中断和方案讨论)
+
+
+---
+
+### 任务：集中管理时间码转换逻辑
+*   **描述:** 将 `frames_to_srt_timecode` 函数从 `backend/resolve_utils.py` 移动到 `backend/timecode_utils.py`，以集中管理所有与时间码转换相关的逻辑。
+*   **完成情况:**
+    *   **代码移动 (code-developer):** 成功将函数移动到目标模块。
+    *   **更新导入 (code-developer):** 成功更新了 `backend/resolve_utils.py` 中的导入语句，确保了功能的连续性。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-07-25
+*   **耗时:** 约5分钟
+
+
+---
+
+### 任务：后端代码全面重构
+*   **描述:** 对后端代码库进行了一系列重构，以提高代码的可维护性、可读性和健壮性。
+*   **完成情况:**
+    *   **提取通用错误处理逻辑 (code-developer):** 在 `main.py` 中创建了 `handle_error` 辅助函数，统一处理 API 错误。
+    *   **提取 Resolve 对象获取逻辑 (code-developer):** 在 `resolve_utils.py` 中创建了 `_get_current_timeline` 辅助函数，封装了获取 `project` 和 `timeline` 对象的逻辑。
+    *   **提取时间线帧率获取逻辑 (code-developer):** 将获取帧率的逻辑整合到 `_get_current_timeline` 函数中。
+    *   **集中管理时间码转换逻辑 (code-developer):** 将 `frames_to_srt_timecode` 函数移动到 `timecode_utils.py`。
+    *   **简化诊断脚本 (code-developer):** 重构了 `diagnose_resolve.py`，使其调用 `resolve_utils.py` 中的辅助函数。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-07-25
+*   **耗时:** 约30分钟
+
+## 2025-07-26: 修复前端 DOM 嵌套警告
+
+- **任务名称:** 修复 `validateDOMNesting` 警告
+- **任务描述:** 解决了在虚拟化 MUI 表格时，`<tbody>` 和 `<div>` 元素因 `react-window` 与 MUI `Table` 结构不兼容而产生的 DOM 嵌套警告。
+- **任务完成情况:**
+  - **执行者:** `code-developer` 模式
+  - **状态:** ✅ 成功
+  - **解决方案:**
+    1.  **分析:** 通过 `context7` 查询 MUI 文档，确认了问题是由于 `react-window` 默认的 `div` 容器与 `Table` 的 `table/tbody/tr` 结构冲突。
+    2.  **修复:** 委派给 `code-developer` 模式，该模式通过将 `SubtitleTable.tsx`、`SubtitleRow.tsx` 和 `EditableSubtitleCell.tsx` 中的所有 MUI `Table` 相关组件的渲染元素统一为 `div`，彻底解决了结构冲突。
+- **任务耗时:** 约 15 分钟 (包含分析和执行)
+
+
+---
+
+### 任务：修复字幕搜索与替换功能的不一致性
+*   **ID:** `d3a7e3c1-0b7a-4b1f-9e4a-5f8b9a1b2c3d` (关联)
+*   **描述:** 解决了前端搜索功能因“过滤”数据导致与“替换”功能行为不一致的问题。最终方案确定为使用筛选逻辑，确保用户体验的统一。
+*   **完成情况:**
+    *   **分析与方案设计 (NexusCore):** 成功定位问题根源，并设计了初步的“高亮”方案。在收到用户反馈后，及时将方案调整为最终的“筛选”方案。
+    *   **Hook与类型重构 (code-developer):** 成功重构了 `useFindReplace` hook 和 `Subtitle` 类型定义，以支持新的逻辑。
+    *   **UI组件更新 (code-developer):** 成功更新了 `App.tsx`, `SubtitleTable.tsx`, 和 `SubtitleRow.tsx` 以适配筛选逻辑。
+    *   **单元测试更新 (code-developer):** 成功创建并更新了所有相关单元测试，确保了代码质量和功能稳定性。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-07-26
+*   **耗时:** 约45分钟 (包含方案调整)

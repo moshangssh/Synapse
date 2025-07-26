@@ -1,16 +1,12 @@
-import React, { memo, useState } from 'react';
-import { TableRow, TableCell, TextField } from '@mui/material';
-import DiffHighlighter from './DiffHighlighter';
-import type { DiffPart } from './DiffHighlighter';
-
-// It's better to have a centralized types file, but for this task, we define it here.
-export interface Subtitle {
-  id: number;
-  startTimecode: string;
-  endTimecode: string;
-  text: string;
-  diffs?: DiffPart[];
-}
+import React, { memo, forwardRef } from 'react';
+import { TableRow, TableCell } from '@mui/material';
+import { Subtitle } from '../types';
+import {
+  tableRowStyle,
+  idCellStyle,
+  timecodeCellStyle,
+} from './sharedStyles';
+import EditableSubtitleCell from './EditableSubtitleCell';
 
 interface SubtitleRowProps {
   row: Subtitle;
@@ -22,49 +18,8 @@ interface SubtitleRowProps {
   setEditingId: (id: number | null) => void;
 }
 
-const tableRowStyle = {
-  cursor: "pointer",
-  "&:hover": {
-    backgroundColor: "action.hover",
-  },
-  display: 'flex',
-  width: '100%',
-};
 
-const idCellStyle = { width: '80px', flexShrink: 0 };
-const timecodeCellStyle = { width: '150px', flexShrink: 0 };
-const textCellStyle = { flexGrow: 1, padding: 0 };
-
-const textFieldStyle = {
-  height: '100%',
-  '& .MuiOutlinedInput-root': {
-    height: '100%',
-    padding: 0,
-    boxSizing: 'border-box',
-    '& .MuiOutlinedInput-notchedOutline': {
-      border: '1px solid #1976d2',
-    },
-    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-      borderWidth: '1px',
-    },
-  },
-  '& .MuiInputBase-input': {
-    padding: '16px',
-    height: '100%',
-    boxSizing: 'border-box',
-  },
-};
-
-const textDisplayStyle: React.CSSProperties = {
-  padding: '16px',
-  height: '100%',
-  boxSizing: 'border-box',
-  display: 'flex',
-  alignItems: 'center'
-};
-
-
-const SubtitleRow = memo(({
+const SubtitleRow = memo(forwardRef<HTMLDivElement, SubtitleRowProps>(({
   row,
   style,
   selectedRow,
@@ -72,46 +27,11 @@ const SubtitleRow = memo(({
   handleRowClick,
   onSubtitleChange,
   setEditingId,
-}: SubtitleRowProps) => {
-  const [editText, setEditText] = useState(row.text);
-  const escapePressedRef = React.useRef(false);
-
-  const isEditing = editingId === row.id;
-
-  const handleDoubleClick = () => {
-    setEditingId(row.id);
-    setEditText(row.text);
-    escapePressedRef.current = false;
-  };
-
-  const handleTextChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setEditText(event.target.value);
-  };
-
-  const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter') {
-      onSubtitleChange(row.id, editText);
-      setEditingId(null);
-    } else if (event.key === 'Escape') {
-      escapePressedRef.current = true;
-      setEditingId(null);
-      setEditText(row.text);
-    }
-  };
-
-  const handleBlur = () => {
-    if (escapePressedRef.current) {
-      escapePressedRef.current = false;
-      return;
-    }
-    if (editText !== row.text) {
-        onSubtitleChange(row.id, editText);
-    }
-    setEditingId(null);
-  };
-
+}, ref) => {
   return (
     <TableRow
+      ref={ref}
+      component="div"
       style={style}
       key={row.id}
       onClick={() => handleRowClick(row.startTimecode, row.endTimecode, row.id)}
@@ -120,33 +40,23 @@ const SubtitleRow = memo(({
         ...(selectedRow === row.id && {
           backgroundColor: 'action.selected',
         }),
+        display: 'flex', // Ensure flex layout to match header
+        width: '100%',   // Ensure full width
       }}
     >
-      <TableCell align="center" component="th" scope="row" sx={idCellStyle}>
+      <TableCell component="div" align="center" scope="row" sx={idCellStyle}>
         {row.id}
       </TableCell>
-      <TableCell align="center" sx={timecodeCellStyle}>{row.startTimecode}</TableCell>
-      <TableCell align="center" sx={timecodeCellStyle}>{row.endTimecode}</TableCell>
-      <TableCell sx={textCellStyle} onDoubleClick={handleDoubleClick}>
-        {isEditing ? (
-          <TextField
-            value={editText}
-            onChange={handleTextChange}
-            onKeyDown={handleKeyDown}
-            onBlur={handleBlur}
-            autoFocus
-            fullWidth
-            variant="outlined"
-            sx={textFieldStyle}
-          />
-        ) : (
-          <div style={textDisplayStyle}>
-            <DiffHighlighter diffs={row.diffs || []} />
-          </div>
-        )}
-      </TableCell>
+      <TableCell component="div" align="center" sx={timecodeCellStyle}>{row.startTimecode}</TableCell>
+      <TableCell component="div" align="center" sx={timecodeCellStyle}>{row.endTimecode}</TableCell>
+      <EditableSubtitleCell
+        row={row}
+        editingId={editingId}
+        onSubtitleChange={onSubtitleChange}
+        setEditingId={setEditingId}
+      />
     </TableRow>
   );
-});
+}));
 
 export default SubtitleRow;
