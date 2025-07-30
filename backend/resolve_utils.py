@@ -5,6 +5,7 @@ import importlib.util
 import tempfile
 from timecode import Timecode
 from timecode_utils import format_timecode, timecode_to_frames, frames_to_srt_timecode
+from schemas import SubtitleTrackInfo
 
 # 配置日志记录
 log_file = os.path.join(os.path.dirname(__file__), 'resolve_connection.log')
@@ -139,12 +140,87 @@ def _get_current_timeline():
 
     return timeline, frame_rate, None
 
-
-def get_resolve_subtitles():
+def get_resolve_project_info():
     """
-    连接到 DaVinci Resolve 并提取当前时间线的字幕信息。
-    返回一个元组 (status, data), 其中 status 是 "success" 或 "error",
-    data 是字幕列表或错误信息字典。
+    Connects to Resolve and retrieves the current project and timeline names.
+
+    Returns:
+        A tuple (status, data), where status is "success" or "error",
+        and data is a dictionary with project and timeline names or an error message.
+    """
+    resolve, error = _connect_to_resolve()
+    if error:
+        return "error", error
+
+    try:
+        projectManager = resolve.GetProjectManager()
+        project = projectManager.GetCurrentProject()
+        if not project:
+            return "error", {"code": "no_project_open", "message": "未找到当前打开的项目。"}
+        
+        timeline = project.GetCurrentTimeline()
+        if not timeline:
+            return "success", {"projectName": project.GetName(), "timelineName": None}
+
+        return "success", {"projectName": project.GetName(), "timelineName": timeline.GetName()}
+
+    except Exception as e:
+        logging.error(f"获取项目信息时出错: {e}", exc_info=True)
+        # Attempt to reconnect
+        resolve, error = _connect_to_resolve(force_reconnect=True)
+        if error:
+            return "error", error
+        
+        try:
+            projectManager = resolve.GetProjectManager()
+            project = projectManager.GetCurrentProject()
+            if not project:
+                return "error", {"code": "no_project_open", "message": "重新连接后仍未找到当前打开的项目。"}
+            
+            timeline = project.GetCurrentTimeline()
+            if not timeline:
+                 return "success", {"projectName": project.GetName(), "timelineName": None}
+
+            return "success", {"projectName": project.GetName(), "timelineName": timeline.GetName()}
+        except Exception as final_e:
+            logging.error(f"重新连接后获取项目信息时仍然出错: {final_e}", exc_info=True)
+            return "error", {"code": "get_info_failed", "message": f"获取项目信息失败: {final_e}"}
+
+
+def get_subtitle_tracks():
+    """
+    连接到 DaVinci Resolve 并获取当前时间线上所有字幕轨道的列表。
+
+    Returns:
+        一个元组 (status, data)，其中 status 是 "success" 或 "error",
+        data 是包含轨道信息的列表或错误信息字典。
+    """
+    timeline, _, error = _get_current_timeline()
+    if error:
+        return "error", error
+
+    track_count = timeline.GetTrackCount("subtitle")
+    if track_count == 0:
+        return "success", {"data": []}
+
+    tracks_data = []
+    for i in range(1, track_count + 1):
+        track_name = timeline.GetTrackName("subtitle", i)
+        tracks_data.append(SubtitleTrackInfo(track_index=i, track_name=track_name))
+
+    return "success", {"data": tracks_data}
+
+
+def get_resolve_subtitles(track_index: int = 1):
+    """
+    连接到 DaVinci Resolve 并从指定轨道提取当前时间线的字幕信息。
+
+    Args:
+        track_index (int): 要提取字幕的轨道索引，默认为 1。
+
+    Returns:
+        一个元组 (status, data), 其中 status 是 "success" 或 "error",
+        data 是字幕列表或错误信息字典。
     """
     timeline, frame_rate, error = _get_current_timeline()
     if error:
@@ -155,8 +231,11 @@ def get_resolve_subtitles():
     if subtitle_track_count == 0:
         return "success", {"frameRate": frame_rate, "data": []}
 
-    # 假设我们总是从第一个字幕轨道提取
-    subtitle_items = timeline.GetItemListInTrack("subtitle", 1)
+    if not (1 <= track_index <= subtitle_track_count):
+        return "error", {"code": "invalid_track_index", "message": f"无效的字幕轨道索引: {track_index}。有效范围是 1 到 {subtitle_track_count}。"}
+
+    # 从指定的字幕轨道提取
+    subtitle_items = timeline.GetItemListInTrack("subtitle", track_index)
     if not subtitle_items:
         return "success", {"frameRate": frame_rate, "data": []}
 

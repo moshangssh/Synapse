@@ -19,6 +19,29 @@ interface SubtitleRowProps {
 }
 
 
+const areEqual = (prevProps: SubtitleRowProps, nextProps: SubtitleRowProps) => {
+  // Compare critical properties to prevent unnecessary re-renders.
+  const rowChanged =
+    prevProps.row.id !== nextProps.row.id ||
+    prevProps.row.text !== nextProps.row.text ||
+    prevProps.row.startTimecode !== nextProps.row.startTimecode ||
+    prevProps.row.endTimecode !== nextProps.row.endTimecode ||
+    JSON.stringify(prevProps.row.diffs) !== JSON.stringify(nextProps.row.diffs);
+
+  if (rowChanged) {
+    return false;
+  }
+
+  // Compare other props that affect rendering.
+  return (
+    prevProps.selectedRow === nextProps.selectedRow &&
+    prevProps.editingId === nextProps.editingId &&
+    // The style prop from react-window should be stable, but a shallow compare is safe.
+    prevProps.style === nextProps.style
+  );
+};
+
+
 const SubtitleRow = memo(forwardRef<HTMLDivElement, SubtitleRowProps>(({
   row,
   style,
@@ -57,6 +80,6 @@ const SubtitleRow = memo(forwardRef<HTMLDivElement, SubtitleRowProps>(({
       />
     </TableRow>
   );
-}));
+}), areEqual);
 
 export default SubtitleRow;

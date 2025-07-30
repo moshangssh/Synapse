@@ -2,13 +2,15 @@ from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Union
 
-from resolve_utils import get_resolve_subtitles, set_resolve_timecode, generate_srt_content, export_to_davinci
+from resolve_utils import get_resolve_subtitles, set_resolve_timecode, generate_srt_content, export_to_davinci, get_resolve_project_info, get_subtitle_tracks
 from schemas import (
     SubtitleItem,
     SuccessResponse,
     ErrorResponse,
     TimecodeRequest,
     SubtitleExportRequest,
+    SubtitleTrackInfo,
+    SubtitleTrackListResponse,
 )
 
 app = FastAPI(
@@ -85,23 +87,52 @@ def set_timecode(request: TimecodeRequest):
     handle_error(error_code, error_message)
 
 
+@app.get("/api/v1/timeline/subtitle_tracks",
+          response_model=Union[SubtitleTrackListResponse, ErrorResponse],
+          tags=["Timeline"],
+          summary="获取DaVinci Resolve时间线上所有的字幕轨道",
+          description="连接到正在运行的DaVinci Resolve实例，并返回当前活动时间线上所有字幕轨道的列表，包含轨道索引和名称。")
+def get_subtitle_tracks_endpoint():
+    """
+    ## 功能:
+    - 连接到 DaVinci Resolve。
+    - 获取当前活动时间线。
+    - 遍历并返回所有字幕轨道的索引和名称。
+
+    ## 返回:
+    - **成功 (200):** 返回包含字幕轨道列表的JSON对象。
+    - **失败 (多种状态码):** 返回包含错误信息的JSON对象。
+    """
+    status, result = get_subtitle_tracks()
+
+    if status == "success":
+        return {"status": "success", "data": result.get("data")}
+
+    error_code = result.get("code", "unknown_error")
+    error_message = result.get("message", "An unknown error occurred.")
+    handle_error(error_code, error_message)
+
+
 @app.get("/api/v1/subtitles",
          response_model=Union[SuccessResponse, ErrorResponse],
          tags=["Subtitles"],
          summary="提取DaVinci Resolve当前时间线的字幕",
-         description="连接到正在运行的DaVinci Resolve实例，并从当前活动时间线的第一个字幕轨道中，提取所有字幕条目的起始时间码、结束时间码和文本内容。")
-def get_subtitles():
+         description="连接到正在运行的DaVinci Resolve实例，并从当前活动时间线的指定字幕轨道中，提取所有字幕条目的起始时间码、结束时间码和文本内容。")
+def get_subtitles(track_index: int = 1):
     """
     ## 功能:
     - 连接到 DaVinci Resolve。
     - 获取当前项目和活动时间线。
-    - 从第一个字幕轨道提取所有字幕。
+    - 从指定字幕轨道提取所有字幕。
+
+    ## 查询参数:
+    - **track_index (int):** 要提取字幕的轨道索引，默认为 1。
 
     ## 返回:
     - **成功 (200):** 返回包含字幕数据的JSON对象。
     - **失败 (多种状态码):** 返回包含错误信息的JSON对象。
     """
-    status, result = get_resolve_subtitles()
+    status, result = get_resolve_subtitles(track_index=track_index)
 
     if status == "success":
         return {"status": "success", "frameRate": result.get("frameRate"), "data": result.get("data")}
@@ -110,6 +141,31 @@ def get_subtitles():
     error_code = result.get("code", "unknown_error")
     error_message = result.get("message", "An unknown error occurred.")
     handle_error(error_code, error_message)
+
+
+@app.get("/api/v1/project-info",
+         tags=["Project"],
+         summary="获取DaVinci Resolve当前项目和时间线信息",
+         description="连接到正在运行的DaVinci Resolve实例，并获取当前项目和时间线的名称。")
+def get_project_info():
+    """
+    ## 功能:
+    - 连接到 DaVinci Resolve。
+    - 获取当前项目名称和活动时间线名称。
+
+    ## 返回:
+    - **成功 (200):** 返回包含项目和时间线名称的JSON对象。
+    - **失败 (多种状态码):** 返回包含错误信息的JSON对象。
+    """
+    status, result = get_resolve_project_info()
+
+    if status == "success":
+        return {"status": "success", "data": result}
+    
+    error_code = result.get("code", "unknown_error")
+    error_message = result.get("message", "An unknown error occurred.")
+    handle_error(error_code, error_message)
+
 
 @app.get("/", include_in_schema=False)
 def read_root():

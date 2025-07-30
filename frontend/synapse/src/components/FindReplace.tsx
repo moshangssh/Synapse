@@ -1,14 +1,13 @@
-import React, { useCallback, memo } from 'react';
-import { TextField, Box, IconButton, InputAdornment, Paper, Tooltip, Typography } from '@mui/material';
+import React, { memo } from 'react';
+import { TextField, Box, IconButton, InputAdornment, Tooltip } from '@mui/material';
 import {
-  KeyboardArrowDown,
-  KeyboardArrowRight,
-  ArrowForward,
-  Replay,
-  Abc, // Placeholder for Match Case
-  FormatQuote, // Placeholder for Match Whole Word
-  DataObject // Placeholder for Regex
-} from '@mui/icons-material';
+  ChevronDown,
+  ChevronRight,
+  CaseSensitive,
+  WholeWord,
+  Regex,
+  ReplaceAll,
+} from 'lucide-react';
 
 interface FindReplaceProps {
   searchQuery: string;
@@ -47,65 +46,112 @@ const FindReplace: React.FC<FindReplaceProps> = ({
     }
   };
 
+  const commonInputStyles = {
+    '& .MuiOutlinedInput-root': {
+      backgroundColor: '#3c3c3c',
+      color: '#cccccc',
+      fontSize: '0.8rem',
+      height: '28px',
+      '& fieldset': {
+        borderColor: '#464647',
+      },
+      '&:hover fieldset': {
+        borderColor: '#464647',
+      },
+      '&.Mui-focused fieldset': {
+        borderColor: '#007acc',
+      },
+    },
+    '& .MuiOutlinedInput-input': {
+      '&::placeholder': {
+        color: '#969696',
+        opacity: 1,
+      },
+    },
+  };
+
+  const iconButtonStyles = (isActive: boolean) => ({
+    width: 24,
+    height: 24,
+    borderRadius: '4px',
+    color: '#cccccc',
+    backgroundColor: isActive ? '#094771' : 'transparent',
+    '&:hover': {
+      backgroundColor: isActive ? '#094771' : '#464647',
+    },
+  });
+
   return (
-    <Paper elevation={2} sx={{ p: 1.5, mb: 2 }}>
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Tooltip title={showReplace ? "隐藏高级替换" : "显示高级替换"}>
-            <IconButton onClick={onToggleShowReplace} size="small">
-              {showReplace ? <KeyboardArrowDown /> : <KeyboardArrowRight />}
-            </IconButton>
-          </Tooltip>
+    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+      <Tooltip title={showReplace ? "隐藏替换" : "显示替换"}>
+        <IconButton
+          onClick={onToggleShowReplace}
+          size="small"
+          sx={{
+            color: '#cccccc',
+            mt: showReplace ? '18px' : '2px',
+            transition: 'margin-top 0.2s ease-in-out',
+          }}
+        >
+          {showReplace ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+        </IconButton>
+      </Tooltip>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+        <TextField
+          placeholder="搜索"
+          variant="outlined"
+          size="small"
+          value={searchQuery}
+          onChange={onSearchChange}
+          fullWidth
+          sx={commonInputStyles}
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end" sx={{ gap: 0.5 }}>
+                <Tooltip title="大小写匹配">
+                  <IconButton sx={iconButtonStyles(matchCase)} onClick={onToggleMatchCase}>
+                    <CaseSensitive size={14} />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="全词匹配">
+                  <IconButton sx={iconButtonStyles(matchWholeWord)} onClick={onToggleMatchWholeWord}>
+                    <WholeWord size={14} />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="使用正则表达式">
+                  <IconButton sx={iconButtonStyles(useRegex)} onClick={onToggleUseRegex}>
+                    <Regex size={14} />
+                  </IconButton>
+                </Tooltip>
+              </InputAdornment>
+            ),
+          }}
+        />
+        {showReplace && (
           <TextField
-            placeholder="在此处搜索字幕..."
+            placeholder="替换"
             variant="outlined"
             size="small"
-            value={searchQuery}
-            onChange={onSearchChange}
+            value={replaceQuery}
+            onChange={onReplaceChange}
+            onKeyDown={handleReplaceKeyDown}
             fullWidth
+            sx={commonInputStyles}
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
-                  <Tooltip title="大小写匹配">
-                    <IconButton size="small" onClick={onToggleMatchCase} color={matchCase ? 'primary' : 'default'}><Abc fontSize="small" /></IconButton>
-                  </Tooltip>
-                  <Tooltip title="全词匹配">
-                    <IconButton size="small" onClick={onToggleMatchWholeWord} color={matchWholeWord ? 'primary' : 'default'}><FormatQuote fontSize="small" /></IconButton>
-                  </Tooltip>
-                  <Tooltip title="使用正则表达式">
-                    <IconButton size="small" onClick={onToggleUseRegex} color={useRegex ? 'primary' : 'default'}><DataObject fontSize="small" /></IconButton>
+                  <Tooltip title="全部替换">
+                    <IconButton sx={iconButtonStyles(false)} onClick={onReplaceAll}>
+                      <ReplaceAll size={14} />
+                    </IconButton>
                   </Tooltip>
                 </InputAdornment>
               ),
             }}
           />
-        </Box>
-        {showReplace && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, pl: '40px' }}>
-            <TextField
-              placeholder="替换为..."
-              variant="outlined"
-              size="small"
-              value={replaceQuery}
-              onChange={onReplaceChange}
-              onKeyDown={handleReplaceKeyDown}
-              fullWidth
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <Tooltip title="全部替换">
-                      <IconButton onClick={onReplaceAll} size="small">
-                        <Replay />
-                      </IconButton>
-                    </Tooltip>
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </Box>
         )}
       </Box>
-    </Paper>
+    </Box>
   );
 };
 

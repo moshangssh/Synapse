@@ -1,7 +1,3 @@
-# 当前无活动任务
+# Active Context
 
-该文件用于记录当前正在处理的复杂子任务的详细工作日志。
-
-当 NexusCore 分配一个需要详细追踪过程的子任务时，该子任务的执行者（例如 code-developer）会在此处记录其详细的思考、步骤、发现和遇到的问题。
-
-在子任务完成后，NexusCore 会读取此文件，将有价值的信息整合到项目的长期记忆库中（如 `decisionLog.md` 和 `progress.md`），然后清空此文件，为下一个任务做准备。
+This file is used as a short-term memory or "scratchpad" for the currently active, complex sub-task. It is managed by NexusCore.

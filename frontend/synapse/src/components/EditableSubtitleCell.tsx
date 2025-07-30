@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, memo } from 'react';
 import { TableCell, TextField } from '@mui/material';
 import DiffHighlighter from './DiffHighlighter';
 import { Subtitle } from '../types';
@@ -83,4 +83,13 @@ const EditableSubtitleCell: React.FC<EditableSubtitleCellProps> = ({
   );
 };
 
-export default EditableSubtitleCell;
+const areEqual = (prevProps: EditableSubtitleCellProps, nextProps: EditableSubtitleCellProps) => {
+  // Only re-render if the text, diffs, or editing status changes.
+  return (
+    prevProps.row.text === nextProps.row.text &&
+    JSON.stringify(prevProps.row.diffs) === JSON.stringify(nextProps.row.diffs) &&
+    prevProps.editingId === nextProps.editingId
+  );
+};
+
+export default memo(EditableSubtitleCell, areEqual);

@@ -9,3 +9,12 @@ export interface Subtitle {
   diffs: DiffPart[];
   isMatch?: boolean;
 }
+
+export interface SubtitleTrack {
+ track_index: number;
+ track_name: string;
+}
+export interface ProjectInfo {
+  projectName: string | null;
+  timelineName: string | null;
+}

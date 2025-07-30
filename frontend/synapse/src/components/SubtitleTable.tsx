@@ -1,36 +1,51 @@
-import React, { useCallback, memo, useState, useMemo, useRef } from 'react';
+import React, { useCallback, memo, useState, useMemo, useRef, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 import { FixedSizeList as List, ListChildComponentProps } from 'react-window';
 import SubtitleRow from './SubtitleRow';
-import { Subtitle } from '../types';
 import { idCellStyle, timecodeCellStyle, textCellStyle } from './sharedStyles';
 import { useTimelineNavigation } from '../hooks/useTimelineNavigation';
+import { useDataStore } from '../stores/useDataStore';
 
 interface SubtitleTableProps {
-  subtitles: Subtitle[];
   jumpTo: "start" | "end" | "middle";
-  onSubtitleChange: (id: number, newText: string) => void;
+  jumpToSubtitleId: number | null;
+  onRowClick: (id: number) => void;
 }
 
-const SubtitleTable: React.FC<SubtitleTableProps> = ({ subtitles, jumpTo, onSubtitleChange }) => {
+const SubtitleTable: React.FC<SubtitleTableProps> = ({ jumpTo, jumpToSubtitleId, onRowClick }) => {
   const listRef = useRef<List>(null);
   const { setTimecode } = useTimelineNavigation();
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const subtitles = useDataStore((state) => state.subtitles);
+  const updateSubtitleText = useDataStore((state) => state.updateSubtitleText);
+
 
   const handleRowClick = useCallback(async (inPoint: string, outPoint: string, id: number) => {
     setSelectedRow(id);
+    onRowClick(id);
     await setTimecode(inPoint, outPoint, jumpTo);
-  }, [jumpTo, setTimecode]);
+  }, [jumpTo, setTimecode, onRowClick]);
+
+  useEffect(() => {
+    if (jumpToSubtitleId !== null) {
+      const index = subtitles.findIndex(sub => sub.id === jumpToSubtitleId);
+      if (index !== -1 && listRef.current) {
+        listRef.current.scrollToItem(index, 'smart');
+        const sub = subtitles[index];
+        handleRowClick(sub.startTimecode, sub.endTimecode, sub.id);
+      }
+    }
+  }, [jumpToSubtitleId, subtitles]);
 
   const itemData = useMemo(() => ({
     subtitles,
     selectedRow,
     editingId,
     handleRowClick,
-    onSubtitleChange,
+    onSubtitleChange: updateSubtitleText,
     setEditingId,
-  }), [subtitles, selectedRow, editingId, handleRowClick, onSubtitleChange, setEditingId]);
+  }), [subtitles, selectedRow, editingId, handleRowClick, updateSubtitleText, setEditingId]);
 
   const Row = useCallback(({ data, index, style }: ListChildComponentProps) => (
     <SubtitleRow

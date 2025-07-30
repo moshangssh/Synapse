@@ -90,3 +90,50 @@ class TestMainAPI(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main(argv=['first-arg-is-ignored'], exit=False)
+
+    @patch('main.get_subtitle_tracks')
+    def test_get_subtitle_tracks_success(self, mock_get_tracks):
+        """Test successfully getting the list of subtitle tracks."""
+        # Arrange
+        mock_data = [
+            {"track_index": 1, "track_name": "English-Sub"},
+            {"track_index": 2, "track_name": "Spanish-Sub"}
+        ]
+        mock_get_tracks.return_value = ("success", {"data": mock_data})
+
+        # Act
+        response = self.client.get("/api/v1/timeline/subtitle_tracks")
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"status": "success", "data": mock_data})
+        mock_get_tracks.assert_called_once()
+
+    @patch('main.get_subtitle_tracks')
+    def test_get_subtitle_tracks_no_tracks(self, mock_get_tracks):
+        """Test getting an empty list when there are no subtitle tracks."""
+        # Arrange
+        mock_get_tracks.return_value = ("success", {"data": []})
+
+        # Act
+        response = self.client.get("/api/v1/timeline/subtitle_tracks")
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"status": "success", "data": []})
+        mock_get_tracks.assert_called_once()
+
+    @patch('main.get_subtitle_tracks')
+    def test_get_subtitle_tracks_resolve_error(self, mock_get_tracks):
+        """Test handling an error from Resolve, like no active timeline."""
+        # Arrange
+        error_message = {"code": "no_active_timeline", "message": "No active timeline in the project."}
+        mock_get_tracks.return_value = ("error", error_message)
+
+        # Act
+        response = self.client.get("/api/v1/timeline/subtitle_tracks")
+
+        # Assert
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json()['detail']['code'], "no_active_timeline")
+        mock_get_tracks.assert_called_once()

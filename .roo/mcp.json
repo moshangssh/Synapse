@@ -54,7 +54,9 @@
         "plan_task",
         "analyze_task",
         "split_tasks",
-        "reflect_task"
+        "reflect_task",
+        "execute_task",
+        "verify_task"
       ]
     },
     "mcp-deepwiki": {
@@ -80,7 +82,10 @@
     "mui-mcp": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@mui/mcp@latest"]
+      "args": [
+        "-y",
+        "@mui/mcp@latest"
+      ]
     }
   }
 }

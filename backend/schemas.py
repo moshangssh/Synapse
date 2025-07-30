@@ -18,6 +18,17 @@ class SubtitleExportRequest(BaseModel):
     frameRate: float
     subtitles: List[SubtitleModel]
 
+# --- Models for Timeline ---
+
+class SubtitleTrackInfo(BaseModel):
+    track_index: int = Field(..., example=1, description="字幕轨道的索引（从1开始）")
+    track_name: str = Field(..., example="Subtitle 1", description="字幕轨道的名称")
+
+class SubtitleTrackListResponse(BaseModel):
+    status: str = "success"
+    data: List[SubtitleTrackInfo]
+
+
 # --- Existing Models from main.py ---
 
 class SubtitleItem(BaseModel):

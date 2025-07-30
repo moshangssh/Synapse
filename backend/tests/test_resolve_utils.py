@@ -88,3 +88,50 @@ def test_set_resolve_timecode_connection_error(mock_connect, mock_resolve_setup)
     
     assert status == "error"
     assert result == error_message
+
+from resolve_utils import get_subtitle_tracks
+from schemas import SubtitleTrackInfo
+
+@patch('resolve_utils._get_current_timeline')
+def test_get_subtitle_tracks_success(mock_get_timeline, mock_resolve_setup):
+    """Tests successfully retrieving a list of subtitle tracks."""
+    _, mock_timeline = mock_resolve_setup
+    mock_get_timeline.return_value = (mock_timeline, 24.0, None)
+    
+    mock_timeline.GetTrackCount.return_value = 2
+    mock_timeline.GetTrackName.side_effect = ["Track 1", "Track 2"]
+    
+    status, result = get_subtitle_tracks()
+    
+    assert status == "success"
+    assert len(result["data"]) == 2
+    assert result["data"][0] == SubtitleTrackInfo(track_index=1, track_name="Track 1")
+    assert result["data"][1] == SubtitleTrackInfo(track_index=2, track_name="Track 2")
+    mock_timeline.GetTrackCount.assert_called_once_with("subtitle")
+    mock_timeline.GetTrackName.assert_any_call("subtitle", 1)
+    mock_timeline.GetTrackName.assert_any_call("subtitle", 2)
+
+@patch('resolve_utils._get_current_timeline')
+def test_get_subtitle_tracks_no_tracks(mock_get_timeline, mock_resolve_setup):
+    """Tests the case where there are no subtitle tracks on the timeline."""
+    _, mock_timeline = mock_resolve_setup
+    mock_get_timeline.return_value = (mock_timeline, 24.0, None)
+    
+    mock_timeline.GetTrackCount.return_value = 0
+    
+    status, result = get_subtitle_tracks()
+    
+    assert status == "success"
+    assert result["data"] == []
+    mock_timeline.GetTrackCount.assert_called_once_with("subtitle")
+
+@patch('resolve_utils._get_current_timeline')
+def test_get_subtitle_tracks_connection_error(mock_get_timeline):
+    """Tests handling of a connection error when getting subtitle tracks."""
+    error_message = {"code": "no_active_timeline", "message": "项目中没有活动的（当前）时间线。"}
+    mock_get_timeline.return_value = (None, None, error_message)
+    
+    status, result = get_subtitle_tracks()
+    
+    assert status == "error"
+    assert result == error_message
