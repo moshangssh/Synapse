@@ -11,8 +11,8 @@ export interface Subtitle {
 }
 
 export interface SubtitleTrack {
- track_index: number;
- track_name: string;
+  trackIndex: number;
+  trackName: string;
 }
 export interface ProjectInfo {
   projectName: string | null;

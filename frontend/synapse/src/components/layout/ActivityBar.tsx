@@ -1,17 +1,28 @@
 import { Box, IconButton, Tooltip, Paper } from '@mui/material';
 import { Files, Search, GitBranch } from 'lucide-react';
+import { useUIStore } from '../../stores/useUIStore';
 
-interface ActivityBarProps {
-  activeView: string;
-  onViewChange: (view: string) => void;
-}
+export function ActivityBar() {
+  const { activeView, setActiveView, isSidebarOpen, toggleSidebar } = useUIStore();
 
-export function ActivityBar({ activeView, onViewChange }: ActivityBarProps) {
   const items = [
     { id: 'explorer', icon: Files, label: 'Explorer' },
     { id: 'search', icon: Search, label: 'Search' },
     { id: 'git', icon: GitBranch, label: 'Source Control' },
   ];
+
+  const handleViewChange = (viewId: string) => {
+    if (activeView === viewId) {
+      // 点击相同图标：切换 Sidebar 的收纳/展示状态
+      toggleSidebar();
+    } else {
+      // 点击不同图标：切换视图并确保 Sidebar 展开
+      setActiveView(viewId);
+      if (!isSidebarOpen) {
+        toggleSidebar();
+      }
+    }
+  };
 
   return (
     <Paper
@@ -29,7 +40,7 @@ export function ActivityBar({ activeView, onViewChange }: ActivityBarProps) {
         {items.map((item) => (
           <Tooltip key={item.id} title={item.label} placement="right">
             <IconButton
-              onClick={() => onViewChange(item.id)}
+              onClick={() => handleViewChange(item.id)}
               sx={{
                 height: 48,
                 width: 48,

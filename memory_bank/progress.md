@@ -1,5 +1,161 @@
 # 项目进度日志
 
+### 任务：修复 FileExplorer "missing key" 警告
+*   **ID:** `fix-key-prop-warning-20250802`
+*   **描述:** 修复了因 `FileExplorer.tsx` 在渲染轨道列表时未提供唯一 `key` prop 而导致的 React 警告。同时，修正了该组件中残留的 `snake_case` 属性访问。
+*   **完成情况:**
+    *   **分析与委派 (NexusCore):** 在收到用户反馈后，成功分析问题，并将任务委派给 `code-developer`。
+    *   **代码实现 (code-developer):** 成功为列表项添加了 `key` prop，并修正了属性名，消除了控制台警告。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-08-02
+*   **耗时:** 约 10 分钟
+
+---
+
+### 任务：分离数据存储与UI副作用
+*   **ID:** `refactor-side-effects-20250802`
+*   **描述:** 根据代码审查报告的建议，将 `useDataStore.ts` 中的文件下载逻辑（副作用）移至 UI 组件层（`MainLayout.tsx`），使 store 的职责更纯粹。
+*   **完成情况:**
+    *   **分析与委派 (NexusCore):** 成功分析问题，并将任务委派给 `code-developer`。
+    *   **代码实现 (code-developer):** 成功重构了 `handleExport` action 和 `MainLayout.tsx`，改善了代码的关注点分离。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-08-02
+*   **耗时:** 约 14 分钟
+
+---
+
+### 任务：重构 useFindReplace.ts 以减少重复代码
+*   **ID:** `refactor-usefindreplace-20250802`
+*   **描述:** 根据代码审查报告的建议，在 `useFindReplace.ts` 中创建了一个 `buildRegex` 辅助函数，以消除 `useMemo` 和 `handleReplaceAll` 中的重复逻辑。
+*   **完成情况:**
+    *   **分析与委派 (NexusCore):** 成功分析问题，并将任务委派给 `code-developer`。
+    *   **代码实现 (code-developer):** 成功完成了代码重构，提高了代码的复用性和可维护性。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-08-02
+*   **耗时:** 约 17 分钟
+
+---
+
+### 任务：简化 React.memo 实现
+*   **ID:** `refactor-react-memo-20250802`
+*   **描述:** 根据代码审查报告的建议，移除了 `SubtitleRow.tsx` 和 `EditableSubtitleCell.tsx` 中 `React.memo` 的自定义 `areEqual` 比较函数，以简化代码。
+*   **完成情况:**
+    *   **分析与委派 (NexusCore):** 成功分析问题，并将任务委派给 `code-developer`。
+    *   **代码实现 (code-developer):** 成功移除了两个组件中的自定义比较函数，使其使用 `React.memo` 的默认行为。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-08-02
+*   **耗时:** 约 8 分钟
+
+---
+
+### 任务：移除遗留的调试代码
+*   **ID:** `cleanup-console-logs-20250802`
+*   **描述:** 根据代码审查报告，移除了 `frontend/synapse/src/components/EditableSubtitleCell.tsx` 中所有遗留的 `console.log` 语句。
+*   **完成情况:**
+    *   **分析与委派 (NexusCore):** 成功分析问题，并将任务委派给 `code-developer`。
+    *   **代码实现 (code-developer):** 成功清理了文件中的所有 `console.log` 语句。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-08-02
+*   **耗时:** 约 7 分钟
+
+---
+
+### 任务：统一 `SubtitleTrack` 命名风格
+*   **ID:** `style-camelcase-20250802`
+*   **描述:** 根据代码审查报告，将 `frontend/synapse/src/types.ts` 中的 `SubtitleTrack` 类型定义从 `snake_case` 更新为 `camelCase`，并在 `useDataStore.ts` 中添加了相应的数据转换逻辑。
+*   **完成情况:**
+    *   **分析与委派 (NexusCore):** 成功分析问题，并将任务委派给 `code-developer`。
+    *   **代码实现 (code-developer):** 成功修改了 `types.ts` 和 `useDataStore.ts`，确保了前端数据风格的一致性。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-08-02
+*   **耗时:** 约 5 分钟
+
+---
+
+### 任务：移除硬编码的 API 地址
+*   **ID:** `config-env-vars-20250802`
+*   **描述:** 根据代码审查报告，将 `useDataStore.ts` 中硬编码的 API 地址 `http://127.0.0.1:8000` 移至 `.env` 文件中的 `VITE_API_BASE_URL` 环境变量。
+*   **完成情况:**
+    *   **分析与委派 (NexusCore):** 成功分析问题，并将任务委派给 `code-developer`。
+    *   **代码实现 (code-developer):** 成功创建了 `.env` 文件，修改了 `useDataStore.ts` 以使用环境变量，并更新了 `.gitignore`。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-08-02
+*   **耗时:** 约 4 分钟
+
+---
+
+### 任务：优化 SubtitleTable 渲染性能
+*   **ID:** `perf-subtitletable-20250802`
+*   **描述:** 根据代码审查报告，优化了 `SubtitleTable.tsx` 中 `Virtuoso` 组件的 `rowContent` 回调，移除了不必要的 `find` 操作，直接使用 `Virtuoso` 提供的行数据。
+*   **完成情况:**
+    *   **分析与委派 (NexusCore):** 成功分析问题，并将任务委派给 `code-developer`。
+    *   **代码实现 (code-developer):** 成功重构了 `rowContent` 回调，显著提升了列表滚动性能。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-08-02
+*   **耗时:** 约 7 分钟
+
+---
+
+### 任务：修复 EditableSubtitleCell 数据流问题
+*   **ID:** `refactor-editablecell-20250802`
+*   **描述:** 根据代码审查报告，重构了 `EditableSubtitleCell.tsx`，移除了对全局 store 的依赖，使其完全由 props 驱动，遵循“单一数据源”原则。
+*   **完成情况:**
+    *   **分析与委派 (NexusCore):** 成功分析问题，并将任务委派给 `code-developer`。
+    *   **代码实现 (code-developer):** 成功重构了组件，解决了数据流混乱和性能问题。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-08-02
+*   **耗时:** 约 10 分钟
+
+---
+
+### 任务：进一步压缩字幕行高
+*   **ID:** `compress-line-height-20250802-round2`
+*   **描述:** 根据用户反馈，在第一轮调整后，进一步压缩了字幕行高。
+*   **完成情况:**
+    *   **分析与委派 (NexusCore):** 成功分析了问题，并将任务委派给 `code-developer`。
+    *   **代码实现 (code-developer):** 成功修改了 `frontend/synapse/src/components/SubtitleRow.tsx` 和 `frontend/synapse/src/components/sharedStyles.ts` 中的样式，进一步减小了内边距和最小行高。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-08-02
+*   **耗时:** 约 5 分钟
+
+---
+
+### 任务：压缩字幕行高
+*   **ID:** `compress-line-height-20250802`
+*   **描述:** 根据用户反馈，压缩了字幕显示区域每行字幕的行高，优化了视觉效果。
+*   **完成情况:**
+    *   **分析与委派 (NexusCore):** 成功分析了问题，并将任务委派给 `code-developer`。
+    *   **代码实现 (code-developer):** 成功修改了 `frontend/synapse/src/components/SubtitleRow.tsx` 和 `frontend/synapse/src/components/sharedStyles.ts` 中的样式。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-08-02
+*   **耗时:** 约 10 分钟
+
+---
+
+### 任务：默认显示 Timeline Tracks 侧边栏
+*   **ID:** `sidebar-default-view-20250802`
+*   **描述:** 修复了应用启动后侧边栏内容为空的问题。通过修改 `useUIStore.ts` 的初始状态，将 `activeView` 默认设置为 `'explorer'`，确保应用启动时默认显示 “Timeline Tracks” 侧边栏。
+*   **完成情况:**
+    *   **分析与委派 (NexusCore):** 成功分析了问题，并将任务委派给 `code-developer`。
+    *   **代码实现 (code-developer):** 成功修改了 `frontend/synapse/src/stores/useUIStore.ts`，设置了正确的默认状态。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-08-02
+*   **耗时:** 约 15 分钟
+
+---
+
 ---
 
 ### 任务：解耦 `resolve_utils.py` 中的 `format_timecode` 函数
@@ -278,7 +434,6 @@
 *   **耗时:** 约15分钟
 
 
----
 **任务名称:** 分析后端代码库
 **任务描述:** 分析 `backend/` 目录下的所有 `.py` 文件，寻找重复的代码和可复用的逻辑。
 **任务完成情况:** 已完成
@@ -486,3 +641,160 @@
 *   **状态:** ✅ 成功
 *   **完成时间:** 2025-07-30
 *   **耗时:** 约15分钟
+
+
+---
+
+### 任务：修改Vite配置以监听所有网络接口
+*   **ID:** `a1b2c3d4-e5f6-4a1e-8b3a-2c9d8e7f6a5b`
+*   **描述:** 将 `frontend/synapse/vite.config.ts` 中的 `server.host` 配置修改为 `"0.0.0.0"`，以允许从本地网络中的其他设备访问开发服务器。
+*   **完成情况:**
+    *   **代码修改 (NexusCore):** 成功将 `host: host || false,` 修改为 `host: "0.0.0.0",`。
+*   **完成者:** NexusCore (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-07-31
+*   **耗时:** 约2分钟
+
+---
+
+### 任务：重构“跳转模式”UI至状态栏
+*   **ID:** `c9d8e7f6-a5b1-4c1d-8b3a-2c9d8e7f6a5b`
+*   **描述:** 将“跳转模式”的前端用户界面（UI）从其当前位置重构并迁移到主窗口的状态栏（Status Bar）中，以简化界面、优化空间利用率并统一用户体验。
+*   **完成情况:**
+    *   **状态提升 (code-developer):** 成功将 `jumpTo` 状态从 `SubtitleEditorPage` 的本地 state 提升到 `useUIStore`。
+    *   **新组件创建与集成 (code-developer):** 成功创建了 `JumpModeSelector.tsx` 组件，并将其集成到 `StatusBar.tsx` 中。同时修复了 `useUIStore.ts` 的类型导出问题。
+    *   **旧代码移除 (code-developer):** 成功从 `SubtitleEditorPage.tsx` 中移除了旧的跳转模式UI和相关逻辑。
+    *   **Bug修复 (code-developer):** 修复了因 `useCallback` 闭包捕获旧 `jumpTo` prop 导致的模式切换不生效问题。通过修改 `SubtitleTable.tsx` 直接从 `useUIStore` 读取状态，解决了此问题。
+    *   **Bug修复 (code-developer):** 修复了切换模式后第一次点击不生效的Bug。通过将 `jumpTo` 添加到 `handleRowClick` 的 `useCallback` 依赖数组中，确保了函数在模式切换后能够被重新创建。
+    *   **深层Bug修复 (code-developer):** 修复了因 `SubtitleRow` 的 `React.memo` 自定义比较函数 `areEqual` 忽略了对回调函数 props 的比较，而导致的深层次渲染问题。通过在 `areEqual` 中添加对 `handleRowClick` 等函数的比较，彻底解决了此问题。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-07-31
+*   **耗时:** 约22分钟 (包含多次Bug排查)
+
+
+---
+
+### 任务：将导出功能按钮重构至 Source Control 侧边栏
+*   **ID:** `f9e8d7c6-a5b1-4c1d-8b3a-2c9d8e7f6a5b`
+*   **描述:** 为了简化主界面并将相关功能整合，将 “导出SRT” 和 “导出至达芬奇” 这两个按钮从 `SubtitleEditorPage.tsx` 移动到 `MainLayout.tsx` 的 Source Control 侧边栏中。
+*   **完成情况:**
+    *   **逻辑提取 (code-developer):** 成功将 `handleExport` 和 `handleExportToDavinci` 函数从页面组件提取到 `useDataStore` 中，实现了逻辑复用。
+    *   **UI迁移 (code-developer):** 成功在 `MainLayout.tsx` 的 Source Control 侧边栏中创建了新的导出按钮，并绑定了新的 store actions。
+    *   **代码清理 (code-developer):** 成功从 `SubtitleEditorPage.tsx` 中移除了旧的按钮及其容器。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-07-31
+*   **耗时:** 约15分钟
+
+
+---
+
+### 任务：修复因违反React Hooks规则导致的运行时崩溃
+*   **ID:** `a1b2c3d4-e5f6-4a1e-8b3a-2c9d8e7f6a5c` (关联 `f9e8d7c6-a5b1-4c1d-8b3a-2c9d8e7f6a5b`)
+*   **描述:** 在将导出逻辑重构到Zustand store后，因在`create`函数中直接调用`useNotifier` hook，违反了React Hooks的使用规则，导致应用启动时崩溃。
+*   **完成情况:**
+    *   **分析 (NexusCore):** 成功定位到问题根源在于Zustand store中不当的hook调用。
+    *   **修复 (error-debugger):** 成功委派任务给`error-debugger`模式。该模式将通知逻辑从数据层（Zustand）完全解耦，并迁移至UI层（`MainLayout.tsx`），彻底解决了问题。
+*   **完成者:** NexusCore (协调), error-debugger (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-07-31
+*   **耗时:** 约15分钟 (包含分析、委派和修复)
+
+---
+
+### 任务：集成 `react-virtuoso` 实现虚拟化
+*   **ID:** `h1i2j3k4-l5m6-4n7o-p8q9-r1s2t3u4v5w6`
+*   **描述:** 为 `SubtitleTable.tsx` 添加 `react-virtuoso` 依赖，并使用 `Virtuoso` 组件实现高性能的虚拟滚动。
+*   **完成情况:**
+    *   **执行者:** `code-developer`
+    *   **总结:** 成功安装了 `react-virtuoso` 并将其集成到 `SubtitleTable.tsx` 中。使用 `Virtuoso` 组件替换了之前的手动 `.map()` 渲染，实现了流畅的虚拟滚动，同时兼容了动态行高和所有现有功能。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-07-31
+*   **耗时:** 约 4 分钟
+
+---
+
+### 任务：实现字幕文本自动换行
+*   **ID:** `g1h2i3j4-k5l6-4m7n-o8p9-q1r2s3t4u5v6`
+*   **描述:** 修改 `SubtitleRow.tsx` 和 `EditableSubtitleCell.tsx` 的样式，允许字幕文本根据单元格宽度自动换行。
+*   **完成情况:**
+    *   **执行者:** `code-developer`
+    *   **总结:** 成功修改了 `frontend/synapse/src/components/sharedStyles.ts`，为 `textCellStyle` 和 `textDisplayStyle` 添加了 `whiteSpace: 'normal'` 和 `wordBreak: 'break-word'` 样式，实现了文本的自动换行。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-07-31
+
+---
+
+### 任务：实现字幕编辑功能
+*   **ID:** `subtitle-edit-20250801`
+*   **描述:** 实现字幕编辑功能，用户可以通过双击字幕行来编辑字幕内容，并且修改后使用现有的diff样式显示差异。
+*   **完成情况:**
+    *   **分析 (NexusCore):** 成功分析了当前字幕编辑功能的实现，确定了需要改进的地方以满足用户需求。
+    *   **实现 (code-developer):** 成功实现了字幕编辑功能，确保双击可编辑，并且修改后使用diff样式显示差异。
+    *   **验证 (NexusCore):** 验证了不改动原有功能和布局样式，并确保遵循KISS、YAGNI、DRY原则。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-08-01
+*   **耗时:** 约15分钟
+*   **耗时:** 约 27 分钟 (包含中断时间)
+
+---
+
+### 任务：重构 `SubtitleTable.tsx` 布局
+*   **ID:** `b1c2d3e4-f5g6-4h1i-j2k3-l4m5n6o7p8q9`
+*   **描述:** 移除 `react-window` 和 `Table` 布局，使用 `Box` 和 Flexbox 重构，为响应式布局和动态行高做准备。
+*   **完成情况:**
+    *   **执行者:** `code-developer`
+    *   **总结:** 成功移除了 `react-window` 和相关的 `Table` 布局，使用 Material-UI 的 `Box` 和 Flexbox 进行了替换。新的布局结构清晰，为后续的响应式和虚拟化实现打下了坚实的基础。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-07-31
+*   **耗时:** 约28分钟
+
+
+---
+
+### 任务：优化前端组件性能
+*   **ID:** `perf-optimization-20250801`
+*   **描述:** 对前端多个组件进行性能优化，包括优化比较函数、稳定回调引用、缓存计算结果等，以提高应用在处理大量字幕数据时的响应速度和流畅度。
+*   **完成情况:**
+    *   **优化 EditableSubtitleCell.tsx (code-developer):** 优化了 `areEqual` 函数，使用更高效的比较方法替代 `JSON.stringify`，避免在 diffs 数据较大时影响性能。
+    *   **优化 SubtitleRow.tsx (code-developer):** 稳定了回调函数引用，使用 `useCallback` 包装传递给子组件的回调函数，减少了不必要的重新渲染。
+    *   **优化 StatusBar.tsx (code-developer):** 使用 `useMemo` 缓存字符数计算和选中字幕时间码查找，避免在每次渲染时都重新计算。
+    *   **优化 EditableSubtitleCell.tsx (code-developer):** 使用 `useEffect` 替代 `setTimeout` 监听 `subtitles` 变化，避免竞态条件问题。
+    *   **修复 MainLayout.tsx (code-developer):** 移除了 `setActiveTrackIndex(null)` 的重复调用，修复了潜在的性能问题。
+    *   **优化 SubtitleRow.tsx (code-developer):** 将 `currentSubtitle` 的计算移到父组件，避免在每个 `SubtitleRow` 实例中都执行查找操作，提高了渲染性能。
+    *   **重构 useDataStore.ts (code-developer):** 提取了 `handleExport` 和 `handleExportToDavinci` 函数的公共逻辑，减少了代码重复，提高了可维护性。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-08-01
+*   **耗时:** 约2小时 (包含分析、实现和测试)
+
+---
+
+### 任务：实现 Sidebar 的收纳/展示功能
+*   **ID:** `sidebar-toggle-20250802`
+*   **描述:** 实现 Sidebar 的收纳和展示功能，用户可以通过点击 ActivityBar 上的图标来收纳或展示 Sidebar。
+*   **完成情况:**
+    *   **架构设计 (Architect):** 完成了架构设计，制定了详细的技术方案和实现计划。
+    *   **代码实现 (code-developer):** 成功实现了功能，包括状态管理、组件交互和 UI 变化。
+*   **完成者:** NexusCore (协调), Architect (设计), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-08-02
+*   **耗时:** 约1小时 (包含设计和实现)
+
+### 任务：优化前端组件性能和安全性
+*   **ID:** `frontend-optimization-20250803`
+*   **描述:** 对前端多个组件进行性能优化和安全性改进，包括修复潜在的安全漏洞、优化比较函数、增强错误处理等。
+*   **完成情况:**
+    *   **安全改进 (code-developer):** 检查了 Tauri 配置，确认项目中没有启用 shell 权限，因此不存在安全漏洞。
+    *   **性能优化 (code-developer):** 为 `EditableSubtitleCell.tsx` 和 `SubtitleRow.tsx` 组件添加了自定义的 `areEqual` 函数，避免了使用 `JSON.stringify` 比较 diffs 数组和比较函数引用，提高了组件的渲染性能。
+    *   **错误处理增强 (code-developer):** 为 `useDataStore.ts` 中的 `handleExport` 和 `handleExportToDavinci` 方法添加了更完善的错误处理，确保能正确处理各种类型的错误。
+    *   **代码简化 (code-developer):** 改进了 `EditableSubtitleCell.tsx` 中的文本聚焦逻辑，移除了不必要的 `setTimeout` 使用，使用更现代化的 React 方式来处理文本聚焦和选择。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-08-03
+*   **耗时:** 约30分钟

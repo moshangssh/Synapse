@@ -47,9 +47,9 @@ export function FileExplorer({
       <List dense sx={{ py: 1 }}>
         {subtitleTracks.map(track => (
           <ListItemButton
-            key={track.track_index}
-            onClick={() => onTrackSelect(track.track_index)}
-            selected={activeTrackIndex === track.track_index}
+            key={track.trackIndex}
+            onClick={() => onTrackSelect(track.trackIndex)}
+            selected={activeTrackIndex === track.trackIndex}
             sx={{
               paddingLeft: `16px`,
               paddingY: 0.25,
@@ -70,7 +70,7 @@ export function FileExplorer({
               <InsertDriveFile sx={{ fontSize: 16 }} />
             </ListItemIcon>
             <ListItemText
-              primary={track.track_name}
+              primary={track.trackName}
               primaryTypographyProps={{ fontSize: '0.75rem' }}
             />
           </ListItemButton>

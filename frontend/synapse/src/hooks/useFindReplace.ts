@@ -12,6 +12,20 @@ export const useFindReplace = () => {
   const [matchWholeWord, setMatchWholeWord] = useState(false);
   const [useRegex, setUseRegex] = useState(false);
 
+const buildRegex = (searchQuery: string, useRegex: boolean, matchCase: boolean, matchWholeWord: boolean): RegExp | null => {
+ if (!searchQuery) return null;
+
+ try {
+   const pattern = useRegex ? searchQuery : searchQuery.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+   const flags = matchCase ? 'g' : 'gi';
+   const finalPattern = matchWholeWord ? `\\b${pattern}\\b` : pattern;
+   return new RegExp(finalPattern, flags);
+ } catch (error) {
+   console.error("Invalid Regex:", error);
+   return null;
+ }
+};
+
   const handleSearchChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(event.target.value);
   }, []);
@@ -29,18 +43,8 @@ export const useFindReplace = () => {
   const toggleUseRegex = useCallback(() => setUseRegex(prev => !prev), []);
 
   const filteredSubtitles = useMemo(() => {
-    if (!searchQuery) {
-      return subtitles;
-    }
-
-    let regex: RegExp;
-    try {
-      const pattern = useRegex ? searchQuery : searchQuery.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-      const flags = matchCase ? 'g' : 'gi';
-      const finalPattern = matchWholeWord ? `\\b${pattern}\\b` : pattern;
-      regex = new RegExp(finalPattern, flags);
-    } catch (error) {
-      console.error("Invalid Regex:", error);
+    const regex = buildRegex(searchQuery, useRegex, matchCase, matchWholeWord);
+    if (!regex) {
       return subtitles;
     }
 
@@ -51,18 +55,8 @@ export const useFindReplace = () => {
   }, [subtitles, searchQuery, matchCase, matchWholeWord, useRegex]);
 
   const handleReplaceAll = useCallback(() => {
-    if (!searchQuery) return;
-
-    let regex: RegExp;
-    try {
-      const pattern = useRegex ? searchQuery : searchQuery.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-      const flags = matchCase ? 'g' : 'gi';
-      const finalPattern = matchWholeWord ? `\\b${pattern}\\b` : pattern;
-      regex = new RegExp(finalPattern, flags);
-    } catch (error) {
-      console.error("Invalid Regex:", error);
-      return;
-    }
+    const regex = buildRegex(searchQuery, useRegex, matchCase, matchWholeWord);
+    if (!regex) return;
 
     const currentSubtitles = useDataStore.getState().subtitles;
     const updatedSubtitles = currentSubtitles.map(sub => {

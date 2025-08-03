@@ -64,6 +64,9 @@
       "args": [
         "-y",
         "mcp-deepwiki@latest"
+      ],
+      "alwaysAllow": [
+        "deepwiki_fetch"
       ]
     },
     "promptx": {

@@ -1,8 +1,11 @@
-import { Box, Typography, Paper } from '@mui/material';
+import { Box, Typography, Paper, IconButton } from '@mui/material';
 import { Circle } from '@mui/icons-material';
+import { useMemo } from 'react';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 
 import { useDataStore } from '../../stores/useDataStore';
 import { useUIStore } from '../../stores/useUIStore';
+import { JumpModeSelector } from './JumpModeSelector';
 
 export function StatusBar() {
   const selectedSubtitleId = useUIStore((state) => state.selectedSubtitleId);
@@ -21,6 +24,14 @@ export function StatusBar() {
   } as const;
 
   const { label, iconColor } = statusConfig[connectionStatus];
+  const [totalChars, originalChars] = useMemo(() => {
+    const total = subtitles.reduce((acc, s) => acc + s.text.length, 0);
+    const original = subtitles.reduce((acc, s) => acc + s.originalText.length, 0);
+    return [total, original];
+  }, [subtitles]);
+  const selectedStartTimecode = useMemo(() => {
+    return subtitles.find(s => s.id === selectedSubtitleId)?.startTimecode ?? 'N/A';
+  }, [subtitles, selectedSubtitleId]);
 
   return (
     <Paper
@@ -36,7 +47,7 @@ export function StatusBar() {
         borderTop: '1px solid #3c3c3c',
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <Circle sx={{ fontSize: 8, color: iconColor }} />
           <Typography variant="caption" sx={{ fontSize: '0.6rem' }}>
@@ -51,15 +62,24 @@ export function StatusBar() {
         </Typography>
       </Box>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+        }}
+      >
+        <JumpModeSelector />
+      </Box>
+
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 2, flex: 1 }}>
         <Typography variant="caption" sx={{ fontSize: '0.6rem' }}>
-          Total Chars: {subtitles.reduce((acc, s) => acc + s.text.length, 0)} ({subtitles.reduce((acc, s) => acc + s.originalText.length, 0)})
+          Total Chars: {totalChars} ({originalChars})
         </Typography>
         <Typography variant="caption" sx={{ fontSize: '0.6rem' }}>
           Selected: {selectedSubtitleId ?? 'N/A'}
         </Typography>
         <Typography variant="caption" sx={{ fontSize: '0.6rem' }}>
-          Timecode: {subtitles.find(s => s.id === selectedSubtitleId)?.startTimecode ?? 'N/A'}
+          Timecode: {selectedStartTimecode}
         </Typography>
       </Box>
     </Paper>

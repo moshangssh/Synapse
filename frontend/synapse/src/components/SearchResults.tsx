@@ -1,6 +1,7 @@
 import React from 'react';
 import { Typography, List, ListItem, ListItemText, Paper, ListItemButton } from '@mui/material';
 import { Subtitle } from '../types';
+import { scrollbarStyle } from './sharedStyles';
 
 interface SearchResultsProps {
   subtitles: Subtitle[];
@@ -13,7 +14,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ subtitles, onResultClick 
       <Typography variant="body2" sx={{ color: '#cccccc', mb: 1 }}>
         {subtitles.length} results
       </Typography>
-      <List dense sx={{ p: 0, maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
+      <List dense sx={{ p: 0, maxHeight: 'calc(100vh - 200px)', overflowY: 'auto', ...scrollbarStyle }}>
         {subtitles.map((subtitle) => (
           <ListItem key={subtitle.id} disablePadding>
             <ListItemButton

@@ -1,26 +1,29 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Box, Paper, Typography } from '@mui/material';
+import { Box, Paper, Typography, Button } from '@mui/material';
 import { ThemeProvider } from './ThemeProvider';
 import { ActivityBar } from './ActivityBar';
 import { FileExplorer } from './FileExplorer';
 import { SubtitleEditorPage } from '../../pages/SubtitleEditorPage';
 import { StatusBar } from './StatusBar';
+import { TitleBar } from './TitleBar';
 import FindReplace from '../FindReplace';
 import SearchResults from '../SearchResults';
 import { useFindReplace } from '../../hooks/useFindReplace';
 import { Subtitle } from '../../types';
 import { useUIStore } from '../../stores/useUIStore';
 import { useDataStore } from '../../stores/useDataStore';
+import useNotifier from '../../hooks/useNotifier';
 
 export function MainLayout() {
+  const notify = useNotifier();
   const {
     activeView,
     setActiveView,
     sidebarWidth,
+    isSidebarOpen,
     setSidebarWidth,
     activeTrackIndex,
     setActiveTrackIndex,
-    selectedSubtitleId,
     setSelectedSubtitleId,
   } = useUIStore();
   const {
@@ -30,6 +33,9 @@ export function MainLayout() {
     setErrorMessage,
     setProjectInfo,
     setSubtitleTracks,
+    handleExport,
+    handleExportToDavinci,
+    subtitles,
   } = useDataStore();
 
   const [loading, setLoading] = useState(false);
@@ -105,7 +111,6 @@ export function MainLayout() {
           // No tracks, but still connected
           setConnectionStatus("connected");
           setSubtitles([]);
-          setActiveTrackIndex(null);
           setActiveTrackIndex(null);
         }
       } else {
@@ -193,6 +198,35 @@ export function MainLayout() {
     };
   }, [handleMouseMove, handleMouseUp]);
 
+  const onExportSRT = async () => {
+    try {
+      const srtContent = await handleExport();
+      const blob = new Blob([srtContent], {
+        type: "text/plain;charset=utf-8",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "subtitles.srt";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      notify.success('SRT导出成功！');
+    } catch (error: any) {
+      notify.error(error.message || '导出SRT时发生未知错误');
+    }
+  };
+
+  const onExportToDavinci = async () => {
+    const result = await handleExportToDavinci();
+    if (result.success) {
+      notify.success(result.message);
+    } else {
+      notify.error(result.message);
+    }
+  };
+
   const renderSidebar = () => {
     const commonPaperStyles = {
       width: '100%',
@@ -252,10 +286,23 @@ export function MainLayout() {
                 Source Control
               </Typography>
             </Box>
-            <Box sx={{ p: 1.5 }}>
-              <Typography variant="body2" sx={{ color: '#969696', fontSize: '0.75rem' }}>
-                No changes detected
-              </Typography>
+            <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={onExportSRT}
+                disabled={subtitles.length === 0}
+              >
+                导出SRT
+              </Button>
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={onExportToDavinci}
+                disabled={subtitles.length === 0}
+              >
+                导出至达芬奇
+              </Button>
             </Box>
           </Paper>
         );
@@ -275,32 +322,43 @@ export function MainLayout() {
           color: '#cccccc',
         }}
       >
+        {/* Title Bar */}
+        <TitleBar />
         {/* Main Content Area */}
-        <Box sx={{ flex: 1, display: 'flex' }}>
+        <Box sx={{ flex: 1, display: 'flex', minHeight: 0 }}>
           {/* Activity Bar */}
-          <ActivityBar activeView={activeView} onViewChange={setActiveView} />
+          <ActivityBar />
           
           {/* Sidebar */}
-          <Box sx={{ width: sidebarWidth, height: '100%' }}>
+          <Box
+            sx={{
+              width: isSidebarOpen ? sidebarWidth : 0,
+              height: '100%',
+              transition: 'width 0.3s ease-in-out',
+              overflow: 'hidden',
+            }}
+          >
             {renderSidebar()}
           </Box>
 
           {/* Resizer */}
-          <Box
-            onMouseDown={handleMouseDown}
-            sx={{
-              width: '1px',
-              cursor: 'col-resize',
-              backgroundColor: 'transparent',
-              height: '100%',
-              transition: 'background-color 0.2s ease-in-out, width 0.2s ease-in-out',
-              '&:hover': {
-                backgroundColor: '#007acc',
-                width: '3px',
-                transform: 'translateX(-1px)'
-              },
-            }}
-          />
+          {isSidebarOpen && (
+            <Box
+              onMouseDown={handleMouseDown}
+              sx={{
+                width: '1px',
+                cursor: 'col-resize',
+                backgroundColor: 'transparent',
+                height: '100%',
+                transition: 'background-color 0.2s ease-in-out, width 0.2s ease-in-out',
+                '&:hover': {
+                  backgroundColor: '#007acc',
+                  width: '3px',
+                  transform: 'translateX(-1px)'
+                },
+              }}
+            />
+          )}
           
           {/* Editor Area */}
           <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>

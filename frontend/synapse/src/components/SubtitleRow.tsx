@@ -1,8 +1,7 @@
-import React, { memo, forwardRef } from 'react';
-import { TableRow, TableCell } from '@mui/material';
+import { memo, forwardRef } from 'react';
+import { Box } from '@mui/material';
 import { Subtitle } from '../types';
 import {
-  tableRowStyle,
   idCellStyle,
   timecodeCellStyle,
 } from './sharedStyles';
@@ -10,7 +9,6 @@ import EditableSubtitleCell from './EditableSubtitleCell';
 
 interface SubtitleRowProps {
   row: Subtitle;
-  style: React.CSSProperties;
   selectedRow: number | null;
   editingId: number | null;
   handleRowClick: (startTimecode: string, endTimecode: string, id: number) => void;
@@ -18,68 +16,75 @@ interface SubtitleRowProps {
   setEditingId: (id: number | null) => void;
 }
 
-
+// 自定义比较函数，避免比较函数引用
 const areEqual = (prevProps: SubtitleRowProps, nextProps: SubtitleRowProps) => {
-  // Compare critical properties to prevent unnecessary re-renders.
-  const rowChanged =
-    prevProps.row.id !== nextProps.row.id ||
-    prevProps.row.text !== nextProps.row.text ||
-    prevProps.row.startTimecode !== nextProps.row.startTimecode ||
-    prevProps.row.endTimecode !== nextProps.row.endTimecode ||
-    JSON.stringify(prevProps.row.diffs) !== JSON.stringify(nextProps.row.diffs);
-
-  if (rowChanged) {
-    return false;
-  }
-
-  // Compare other props that affect rendering.
+  // 比较非函数属性
   return (
+    prevProps.row.id === nextProps.row.id &&
+    prevProps.row.startTimecode === nextProps.row.startTimecode &&
+    prevProps.row.endTimecode === nextProps.row.endTimecode &&
+    prevProps.row.text === nextProps.row.text &&
+    prevProps.row.originalText === nextProps.row.originalText &&
+    // 比较 diffs 数组
+    prevProps.row.diffs === nextProps.row.diffs && // 在 JavaScript 中，对象引用比较是合理的，因为 diffs 应该是不可变的
     prevProps.selectedRow === nextProps.selectedRow &&
-    prevProps.editingId === nextProps.editingId &&
-    // The style prop from react-window should be stable, but a shallow compare is safe.
-    prevProps.style === nextProps.style
+    prevProps.editingId === nextProps.editingId
   );
 };
 
-
 const SubtitleRow = memo(forwardRef<HTMLDivElement, SubtitleRowProps>(({
   row,
-  style,
   selectedRow,
   editingId,
   handleRowClick,
   onSubtitleChange,
   setEditingId,
 }, ref) => {
+  // 直接使用从父组件传递过来的row数据
+  const currentSubtitle = row;
+
+  // 处理整行双击编辑
+  const handleRowDoubleClick = () => {
+    setEditingId(row.id);
+  };
+
   return (
-    <TableRow
+    <Box
       ref={ref}
-      component="div"
-      style={style}
-      key={row.id}
-      onClick={() => handleRowClick(row.startTimecode, row.endTimecode, row.id)}
+      key={currentSubtitle.id}
+      onClick={() => handleRowClick(currentSubtitle.startTimecode, currentSubtitle.endTimecode, currentSubtitle.id)}
+      onDoubleClick={handleRowDoubleClick}
       sx={{
-        ...tableRowStyle,
-        ...(selectedRow === row.id && {
+        display: 'flex',
+        alignItems: 'center',
+        borderBottom: 1,
+        borderColor: 'divider',
+        cursor: 'pointer',
+        '&:hover': {
+          backgroundColor: 'action.hover',
+        },
+        ...(selectedRow === currentSubtitle.id && {
           backgroundColor: 'action.selected',
         }),
-        display: 'flex', // Ensure flex layout to match header
-        width: '100%',   // Ensure full width
       }}
     >
-      <TableCell component="div" align="center" scope="row" sx={idCellStyle}>
-        {row.id}
-      </TableCell>
-      <TableCell component="div" align="center" sx={timecodeCellStyle}>{row.startTimecode}</TableCell>
-      <TableCell component="div" align="center" sx={timecodeCellStyle}>{row.endTimecode}</TableCell>
+      <Box component="div" sx={{ ...idCellStyle, textAlign: 'center', py: 0.25 }}>
+        {currentSubtitle.id}
+      </Box>
+      <Box component="div" sx={{ ...timecodeCellStyle, textAlign: 'center', py: 0.25 }}>
+        {currentSubtitle.startTimecode}
+      </Box>
+      <Box component="div" sx={{ ...timecodeCellStyle, textAlign: 'center', py: 0.25 }}>
+        {currentSubtitle.endTimecode}
+      </Box>
       <EditableSubtitleCell
-        row={row}
+        row={currentSubtitle}
         editingId={editingId}
         onSubtitleChange={onSubtitleChange}
         setEditingId={setEditingId}
       />
-    </TableRow>
+    </Box>
   );
-}), areEqual);
+}));
 
-export default SubtitleRow;
+export default memo(SubtitleRow, areEqual);
