@@ -1,7 +1,6 @@
-import { Box, Typography, Paper, IconButton } from '@mui/material';
-import { Circle } from '@mui/icons-material';
+import { Box, Typography, Paper } from '@mui/material';
+import { Circle } from 'lucide-react';
 import { useMemo } from 'react';
-import { getCurrentWindow } from '@tauri-apps/api/window';
 
 import { useDataStore } from '../../stores/useDataStore';
 import { useUIStore } from '../../stores/useUIStore';
@@ -49,7 +48,7 @@ export function StatusBar() {
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <Circle sx={{ fontSize: 8, color: iconColor }} />
+          <Circle size={8} color={iconColor} />
           <Typography variant="caption" sx={{ fontSize: '0.6rem' }}>
             {label}
           </Typography>

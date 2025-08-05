@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Box, Paper, Typography, Button } from '@mui/material';
+import { Download, Send } from 'lucide-react';
 import { ThemeProvider } from './ThemeProvider';
 import { ActivityBar } from './ActivityBar';
 import { FileExplorer } from './FileExplorer';
@@ -46,7 +47,7 @@ export function MainLayout() {
     setConnectionStatus("connecting");
     setErrorMessage("");
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/v1/subtitles?track_index=${trackIndex}`);
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/subtitles?track_index=${trackIndex}`);
       const data = await response.json();
 
       if (response.ok && data.status === "success") {
@@ -74,7 +75,7 @@ export function MainLayout() {
 
   const fetchProjectInfo = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/v1/project-info');
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/project-info`);
       const result = await response.json();
 
       if (response.ok && result.status === 'success') {
@@ -95,7 +96,7 @@ export function MainLayout() {
     setErrorMessage("");
     setConnectionStatus("connecting");
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/v1/timeline/subtitle_tracks");
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/timeline/subtitle_tracks`);
       const data = await response.json();
       if (response.ok && data.status === "success") {
         setSubtitleTracks(data.data);
@@ -292,14 +293,16 @@ export function MainLayout() {
                 color="primary"
                 onClick={onExportSRT}
                 disabled={subtitles.length === 0}
+                startIcon={<Download size={16} />}
               >
                 导出SRT
               </Button>
               <Button
                 variant="contained"
-                color="secondary"
+                color="primary"
                 onClick={onExportToDavinci}
                 disabled={subtitles.length === 0}
+                startIcon={<Send size={16} />}
               >
                 导出至达芬奇
               </Button>

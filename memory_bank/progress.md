@@ -798,3 +798,106 @@
 *   **状态:** ✅ 成功
 *   **完成时间:** 2025-08-03
 *   **耗时:** 约30分钟
+
+### 任务：实现SRT文件导入功能
+*   **ID:** `srt-import-feature-20250804`
+*   **描述:** 在timeline tracks的刷新按钮旁新增导入按钮，支持用户导入SRT文件。导入的文件以文件的形式显示在下方区域，与原有字幕轨道并存且互不干扰，显示名称直接采用用户上传的原始文件名。所有后续操作（如编辑、diff显示等）均与现有字幕功能完全兼容，并保留导出到达芬奇（DaVinci Resolve）和SRT文件的能力。
+*   **完成情况:**
+    *   **分析与规划 (NexusCore):** 成功分析了任务需求，制定了详细的实施计划，并将任务分解为6个子任务。
+    *   **类型定义更新 (code-developer):** 成功在 `types.ts` 中添加了 `ImportedSubtitleFile` 和 `SrtSubtitleEntry` 接口，用于表示导入的SRT文件。
+    *   **数据存储更新 (code-developer):** 成功在 `useDataStore.ts` 中添加了对导入SRT文件的支持，包括状态管理和相关操作方法。
+    *   **SRT解析工具实现 (code-developer):** 成功创建了 `srtParser.ts` 工具函数文件，实现了SRT文件内容的解析和验证功能。
+    *   **FileExplorer组件更新 (code-developer):** 成功在 `FileExplorer.tsx` 中添加了导入按钮，并实现了文件选择和导入逻辑。
+    *   **导入文件显示 (code-developer):** 成功修改 `FileExplorer.tsx`，在Timeline Tracks区域下方显示导入的SRT文件，并实现了点击交互。
+    *   **功能兼容性验证 (code-developer):** 成功验证了导入的字幕与现有功能的兼容性，并提供了潜在问题的修复方案。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-08-04
+*   **耗时:** 约2小时 (包含分析、规划、实施和验证)
+
+---
+
+### 任务：修复 FileExplorer.tsx 中的代码重复问题
+*   **ID:** `code-duplication-fix-20250804`
+*   **描述:** 修复了因 `FileExplorer.tsx` 中存在两段完全相同的 SRT 字幕转换代码而导致的代码重复问题。
+*   **完成情况:**
+    *   **分析与规划 (NexusCore):** 成功分析了问题根源，制定了提取公共转换函数的解决方案。
+    *   **工具函数创建 (NexusCore):** 成功创建了 `frontend/synapse/src/utils/converter.ts` 文件，实现了 `convertSrtToSubtitles` 工具函数。
+    *   **代码重构 (NexusCore):** 成功替换了 `FileExplorer.tsx` 中的两处重复代码，使用新的转换函数。
+*   **完成者:** NexusCore (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-08-04T12:21:39.820Z
+*   **耗时:** 约5分钟
+
+### 任务：组件职责优化与状态管理改进 (2025-08-04)
+*   **ID:** `component-optimization-20250804`
+*   **描述:** 根据用户提供的三个建议，对项目进行了组件职责优化和状态管理改进，包括创建自定义Hook、改进状态管理函数和重构选择状态逻辑。
+*   **完成情况:**
+    *   **分析与规划 (NexusCore):** 成功分析了用户提供的三个建议，制定了详细的实施计划，并将任务分解为3个子任务。
+    *   **创建自定义Hook useSrtImporter (code-developer):** 成功创建了 `useSrtImporter.ts` 文件，封装了文件导入相关的逻辑，使 FileExplorer 组件更专注于UI渲染。
+    *   **改进 useDataStore 中的 addImportedSubtitleFile 函数 (code-developer):** 成功修改了 `addImportedSubtitleFile` 函数，添加了检查逻辑，防止重复添加同名文件。
+    *   **重构 FileExplorer 中的选择状态逻辑 (code-developer):** 成功重构了 FileExplorer 中的选择状态逻辑，使用统一的状态对象替代了两个独立的状态，简化了选择逻辑的判断条件。
+*   **完成者:** NexusCore (协调), code-developer (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-08-04
+*   **耗时:** 约1小时 (包含分析、规划、实施和验证)
+
+---
+
+### 任务：调整SRT导入图标位置
+*   **ID:** `srt-icon-position-adjustment-20250804`
+*   **描述:** 将SRT导入图标从刷新按钮的左边移动到右边，调整图标顺序以符合用户界面布局要求。
+*   **完成情况:**
+    *   **图标位置调整 (NexusCore):** 成功修改了 `FileExplorer.tsx` 中的图标顺序，将导入按钮移动到刷新按钮的右边。
+*   **完成者:** NexusCore (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-08-04T07:27:48.388Z
+*   **耗时:** 约2分钟
+
+---
+
+### 任务：将SRT导入按钮图标更换为lucide-react的Import
+*   **ID:** `srt-icon-lucide-import-20250804`
+*   **描述:** 将SRT导入按钮的图标从Material-UI的AddCircleOutline更换为lucide-react的Import图标，使图标风格与刷新按钮保持一致。
+*   **完成情况:**
+    *   **图标更换 (NexusCore):** 成功修改了 `FileExplorer.tsx` 中的导入语句和组件使用，将Material-UI的AddCircleOutline图标替换为lucide-react的Import图标。
+*   **完成者:** NexusCore (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-08-04T07:54:15.240Z
+*   **耗时:** 约2分钟
+
+---
+
+### 任务：将刷新按钮图标更换为lucide-react的RefreshCcw
+*   **ID:** `refresh-icon-lucide-refresh-ccw-20250804`
+*   **描述:** 将刷新按钮的图标从lucide-react的RefreshCw更换为RefreshCcw，以提供更合适的视觉表示。
+*   **完成情况:**
+    *   **图标更换 (NexusCore):** 成功修改了 `FileExplorer.tsx` 中的导入语句和组件使用，将lucide-react的RefreshCw图标替换为RefreshCcw图标。
+*   **完成者:** NexusCore (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-08-04T08:58:19.489Z
+*   **耗时:** 约1分钟
+
+---
+
+### 任务：更换SRT导入按钮图标
+*   **ID:** `srt-icon-replacement-20250804`
+*   **描述:** 将SRT导入按钮的图标从Upload更改为FileUpload，以提供更直观的视觉表示。
+*   **完成情况:**
+    *   **图标更换 (NexusCore):** 成功修改了 `FileExplorer.tsx` 中的导入语句和组件使用，将Upload图标替换为FileUpload图标。
+*   **完成者:** NexusCore (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-08-04T07:41:46.355Z
+*   **耗时:** 约3分钟
+
+---
+
+### 任务：再次更换SRT导入按钮图标
+*   **ID:** `srt-icon-replacement-2-20250804`
+*   **描述:** 将SRT导入按钮的图标从FileUpload更改为AddCircleOutline，以提供更简洁的视觉表示。
+*   **完成情况:**
+    *   **图标更换 (NexusCore):** 成功修改了 `FileExplorer.tsx` 中的导入语句和组件使用，将FileUpload图标替换为AddCircleOutline图标。
+*   **完成者:** NexusCore (执行)
+*   **状态:** ✅ 成功
+*   **完成时间:** 2025-08-04T07:47:24.152Z
+*   **耗时:** 约2分钟

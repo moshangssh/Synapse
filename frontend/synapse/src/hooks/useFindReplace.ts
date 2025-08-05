@@ -58,7 +58,7 @@ const buildRegex = (searchQuery: string, useRegex: boolean, matchCase: boolean, 
     const regex = buildRegex(searchQuery, useRegex, matchCase, matchWholeWord);
     if (!regex) return;
 
-    const currentSubtitles = useDataStore.getState().subtitles;
+    const currentSubtitles = subtitles;
     const updatedSubtitles = currentSubtitles.map(sub => {
       const currentText = sub.diffs
         .filter(p => p.type !== 'removed')
@@ -83,7 +83,7 @@ const buildRegex = (searchQuery: string, useRegex: boolean, matchCase: boolean, 
 
     setSearchQuery('');
     setReplaceQuery('');
-  }, [setSubtitles, searchQuery, replaceQuery, matchCase, matchWholeWord, useRegex]);
+  }, [setSubtitles, searchQuery, replaceQuery, matchCase, matchWholeWord, useRegex, subtitles]);
 
   return {
     searchQuery,

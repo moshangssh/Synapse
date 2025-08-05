@@ -56,7 +56,8 @@
         "split_tasks",
         "reflect_task",
         "execute_task",
-        "verify_task"
+        "verify_task",
+        "list_tasks"
       ]
     },
     "mcp-deepwiki": {

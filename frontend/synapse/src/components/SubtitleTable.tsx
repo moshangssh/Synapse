@@ -1,4 +1,4 @@
-import React, { useCallback, memo, useState, useRef, useEffect } from 'react';
+import React, { useCallback, memo, useState, useRef, useEffect, useMemo } from 'react';
 import { Box, styled } from '@mui/material';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 import SubtitleRow from './SubtitleRow';
@@ -107,29 +107,31 @@ const SubtitleTable: React.FC<SubtitleTableProps> = ({ jumpToSubtitleId, onRowCl
         />
         {/* 修改过的行标记层 */}
         <ModifiedLinesOverlay>
-          {subtitles.map((subtitle, index) => {
-            // 检查行是否被修改过
-            const isModified = subtitle.originalText !== subtitle.text ||
-                              subtitle.diffs.some(diff => diff.type !== 'normal');
-            
-            // 只为修改过的行显示标记
-            if (isModified) {
-              // 计算行在滚动条上的位置
-              // 简化计算：假设每行高度相等
-              const totalLines = subtitles.length;
-              const position = (index / totalLines) * 100;
+          {useMemo(() => {
+            const totalLines = subtitles.length;
+            return subtitles.map((subtitle, index) => {
+              // 检查行是否被修改过
+              const isModified = subtitle.originalText !== subtitle.text ||
+                                subtitle.diffs.some(diff => diff.type !== 'normal');
               
-              return (
-                <ModifiedLineMarker
-                  key={subtitle.id}
-                  style={{
-                    top: `${position}%`,
-                  }}
-                />
-              );
-            }
-            return null;
-          })}
+              // 只为修改过的行显示标记
+              if (isModified) {
+                // 计算行在滚动条上的位置
+                // 简化计算：假设每行高度相等
+                const position = (index / totalLines) * 100;
+                
+                return (
+                  <ModifiedLineMarker
+                    key={subtitle.id}
+                    style={{
+                      top: `${position}%`,
+                    }}
+                  />
+                );
+              }
+              return null;
+            });
+          }, [subtitles])}
         </ModifiedLinesOverlay>
       </Box>
     </Box>

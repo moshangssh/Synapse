@@ -137,3 +137,90 @@ if __name__ == '__main__':
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.json()['detail']['code'], "no_active_timeline")
         mock_get_tracks.assert_called_once()
+
+    @patch('main.generate_srt_content')
+    def test_export_subtitles_as_srt_success(self, mock_generate_srt_content):
+        """Test successfully exporting subtitles as SRT."""
+        # Arrange
+        mock_srt_content = "1\n00:00:01,000 --> 00:00:04,000\nHello, world!"
+        mock_generate_srt_content.return_value = mock_srt_content
+        
+        request_data = {
+            "frameRate": 24.0,
+            "subtitles": [
+                {
+                    "id": 1,
+                    "startTimecode": "00:00:01:00",
+                    "endTimecode": "00:00:04:00",
+                    "diffs": [
+                        {"type": "normal", "value": "Hello, world!"}
+                    ]
+                }
+            ]
+        }
+
+        # Act
+        response = self.client.post("/api/v1/export/srt", json=request_data)
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.text, mock_srt_content)
+        self.assertEqual(response.headers['content-type'], 'text/plain; charset=utf-8')
+        mock_generate_srt_content.assert_called_once()
+
+    @patch('main.export_to_davinci')
+    def test_export_subtitles_to_davinci_success(self, mock_export_to_davinci):
+        """Test successfully exporting subtitles to DaVinci Resolve."""
+        # Arrange
+        mock_export_to_davinci.return_value = ("success", {"message": "成功导出至达芬奇！"})
+        
+        request_data = {
+            "frameRate": 24.0,
+            "subtitles": [
+                {
+                    "id": 1,
+                    "startTimecode": "00:00:01:00",
+                    "endTimecode": "00:00:04:00",
+                    "diffs": [
+                        {"type": "normal", "value": "Hello, world!"}
+                    ]
+                }
+            ]
+        }
+
+        # Act
+        response = self.client.post("/api/v1/export/davinci", json=request_data)
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"status": "success", "message": "成功导出至达芬奇！"})
+        mock_export_to_davinci.assert_called_once()
+
+    @patch('main.export_to_davinci')
+    def test_export_subtitles_to_davinci_error(self, mock_export_to_davinci):
+        """Test handling an error when exporting subtitles to DaVinci Resolve."""
+        # Arrange
+        error_message = {"code": "export_error", "message": "导出至达芬奇时发生错误"}
+        mock_export_to_davinci.return_value = ("error", error_message)
+        
+        request_data = {
+            "frameRate": 24.0,
+            "subtitles": [
+                {
+                    "id": 1,
+                    "startTimecode": "00:00:01:00",
+                    "endTimecode": "00:00:04:00",
+                    "diffs": [
+                        {"type": "normal", "value": "Hello, world!"}
+                    ]
+                }
+            ]
+        }
+
+        # Act
+        response = self.client.post("/api/v1/export/davinci", json=request_data)
+
+        # Assert
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.json()['detail']['code'], "export_error")
+        mock_export_to_davinci.assert_called_once()

@@ -57,6 +57,7 @@ const SubtitleRow = memo(forwardRef<HTMLDivElement, SubtitleRowProps>(({
       sx={{
         display: 'flex',
         alignItems: 'center',
+        height: '50px',
         borderBottom: 1,
         borderColor: 'divider',
         cursor: 'pointer',
