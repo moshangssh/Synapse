@@ -24,6 +24,8 @@ export interface Subtitle {
   diffs: DiffPart[];
   /** 是否匹配搜索条件 */
   isMatch?: boolean;
+  /** 是否被修改过 */
+  isModified?: boolean;
 }
 
 /**
@@ -77,4 +79,14 @@ export interface ImportedSubtitleFile {
     /** 文件格式 */
     format: 'srt';
   };
+}
+
+/**
+ * API错误信息接口
+ */
+export interface ApiError {
+  /** 错误消息 */
+  message: string;
+  /** 错误码（可选） */
+  code?: string;
 }

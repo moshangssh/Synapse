@@ -40,6 +40,7 @@ const SubtitleTable: React.FC<SubtitleTableProps> = ({ jumpToSubtitleId, onRowCl
   const [editingId, setEditingId] = useState<number | null>(null);
   const subtitles = useDataStore((state) => state.subtitles);
   const updateSubtitleText = useDataStore((state) => state.updateSubtitleText);
+  const modifiedIndices = useDataStore((state) => state.getModifiedSubtitleIndices());
   const jumpTo = useUIStore((state) => state.jumpTo);
 
   // 使用 useCallback 包装回调函数以稳定它们的引用
@@ -109,29 +110,20 @@ const SubtitleTable: React.FC<SubtitleTableProps> = ({ jumpToSubtitleId, onRowCl
         <ModifiedLinesOverlay>
           {useMemo(() => {
             const totalLines = subtitles.length;
-            return subtitles.map((subtitle, index) => {
-              // 检查行是否被修改过
-              const isModified = subtitle.originalText !== subtitle.text ||
-                                subtitle.diffs.some(diff => diff.type !== 'normal');
-              
-              // 只为修改过的行显示标记
-              if (isModified) {
-                // 计算行在滚动条上的位置
-                // 简化计算：假设每行高度相等
-                const position = (index / totalLines) * 100;
-                
-                return (
-                  <ModifiedLineMarker
-                    key={subtitle.id}
-                    style={{
-                      top: `${position}%`,
-                    }}
-                  />
-                );
-              }
-              return null;
+            if (totalLines === 0) return null;
+
+            return modifiedIndices.map((index) => {
+              const position = (index / totalLines) * 100;
+              return (
+                <ModifiedLineMarker
+                  key={subtitles[index].id}
+                  style={{
+                    top: `${position}%`,
+                  }}
+                />
+              );
             });
-          }, [subtitles])}
+          }, [modifiedIndices, subtitles.length])}
         </ModifiedLinesOverlay>
       </Box>
     </Box>

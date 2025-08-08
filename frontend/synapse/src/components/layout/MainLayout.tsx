@@ -37,17 +37,25 @@ export function MainLayout() {
     handleExport,
     handleExportToDavinci,
     subtitles,
+    errorMessage: currentErrorMessage,
   } = useDataStore();
 
   const [loading, setLoading] = useState(false);
   const [jumpToSubtitleId, setJumpToSubtitleId] = useState<number | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchSubtitles = useCallback(async (trackIndex: number = 1) => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+
     setLoading(true);
     setConnectionStatus("connecting");
-    setErrorMessage("");
+    setErrorMessage(null);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/subtitles?track_index=${trackIndex}`);
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/subtitles?track_index=${trackIndex}`, { signal });
       const data = await response.json();
 
       if (response.ok && data.status === "success") {
@@ -60,20 +68,31 @@ export function MainLayout() {
         setFrameRate(data.frameRate);
         setConnectionStatus("connected");
       } else {
-        throw new Error(data.message || "获取字幕失败");
+        const errorPayload = {
+          message: data.message || "获取字幕失败",
+          code: data.code,
+        };
+        setErrorMessage(errorPayload);
+        throw new Error(errorPayload.message);
       }
     } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.log('Fetch aborted');
+        return;
+      }
       setConnectionStatus("error");
-      setErrorMessage(
-        error.message || "无法连接到后端服务，请检查服务是否正在运行。"
-      );
+      if (!currentErrorMessage) {
+        setErrorMessage({
+          message: error.message || "无法连接到后端服务，请检查服务是否正在运行。",
+        });
+      }
       setSubtitles([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [setSubtitles, setFrameRate, setConnectionStatus, setErrorMessage]);
 
-  const fetchProjectInfo = async () => {
+  const fetchProjectInfo = useCallback(async () => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/project-info`);
       const result = await response.json();
@@ -89,11 +108,11 @@ export function MainLayout() {
       console.error('Failed to fetch project info:', error);
       setProjectInfo({ projectName: 'N/A', timelineName: 'N/A' });
     }
-  };
+  }, [setProjectInfo]);
 
   const fetchSubtitleTracks = useCallback(async () => {
     setLoading(true);
-    setErrorMessage("");
+    setErrorMessage(null);
     setConnectionStatus("connecting");
     try {
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/timeline/subtitle_tracks`);
@@ -103,11 +122,9 @@ export function MainLayout() {
         if (data.data.length > 0) {
           const firstTrackIndex = data.data[0].track_index;
           setActiveTrackIndex(firstTrackIndex);
-          // Fetch subtitles for the first track AND project info
-          await Promise.all([
-            fetchSubtitles(firstTrackIndex),
-            fetchProjectInfo()
-          ]);
+          // The useEffect hook will trigger fetchSubtitles when activeTrackIndex is set.
+          // We only need to fetch non-critical project info here.
+          await fetchProjectInfo();
         } else {
           // No tracks, but still connected
           setConnectionStatus("connected");
@@ -115,16 +132,23 @@ export function MainLayout() {
           setActiveTrackIndex(null);
         }
       } else {
-        throw new Error(data.message || "获取字幕轨道失败");
+        const errorPayload = {
+          message: data.message || "获取字幕轨道失败",
+          code: data.code,
+        };
+        setErrorMessage(errorPayload);
+        throw new Error(errorPayload.message);
       }
     } catch (error: any) {
-      setErrorMessage(error.message || "无法获取字幕轨道");
+      if (!currentErrorMessage) {
+        setErrorMessage({ message: error.message || "无法获取字幕轨道" });
+      }
       setConnectionStatus("error");
       setSubtitles([]);
     } finally {
       setLoading(false);
     }
-  }, [fetchSubtitles]);
+  }, [setErrorMessage, setConnectionStatus, setSubtitleTracks, setActiveTrackIndex, fetchProjectInfo, setSubtitles, currentErrorMessage]);
 
   useEffect(() => {
     if (activeTrackIndex !== null) {
@@ -144,6 +168,10 @@ export function MainLayout() {
     // Reset after a short delay to allow for re-clicking the same item
     setTimeout(() => setJumpToSubtitleId(null), 50);
   };
+
+  const handleRowClick = useCallback((id: number) => {
+    setSelectedSubtitleId(id);
+  }, [setSelectedSubtitleId]);
 
   const {
     searchQuery,
@@ -367,7 +395,7 @@ export function MainLayout() {
           <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             <SubtitleEditorPage
               jumpToSubtitleId={jumpToSubtitleId}
-              onRowClick={(id) => setSelectedSubtitleId(id)}
+              onRowClick={handleRowClick}
             />
           </Box>
         </Box>
