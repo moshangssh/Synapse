@@ -4,6 +4,7 @@ import { Download, Send } from 'lucide-react';
 import { ThemeProvider } from './ThemeProvider';
 import { ActivityBar } from './ActivityBar';
 import { FileExplorer } from './FileExplorer';
+import { OptimizerSidebar } from './OptimizerSidebar';
 import { SubtitleEditorPage } from '../../pages/SubtitleEditorPage';
 import { StatusBar } from './StatusBar';
 import { TitleBar } from './TitleBar';
@@ -307,6 +308,8 @@ export function MainLayout() {
             </Box>
           </Paper>
         );
+      case 'optimizer':
+        return <OptimizerSidebar />;
       case 'git':
         return (
           <Paper sx={commonPaperStyles}>

@@ -1,5 +1,5 @@
 import { Box, IconButton, Tooltip, Paper } from '@mui/material';
-import { Files, Search, Upload } from 'lucide-react';
+import { Files, Search, Upload, Wand2 } from 'lucide-react';
 import { useUIStore } from '../../stores/useUIStore';
 
 export function ActivityBar() {
@@ -8,6 +8,7 @@ export function ActivityBar() {
   const items = [
     { id: 'explorer', icon: Files, label: 'Explorer' },
     { id: 'search', icon: Search, label: 'Search' },
+    { id: 'optimizer', icon: Wand2, label: 'Optimizer' },
     { id: 'git', icon: Upload, label: 'Export' },
   ];
 
