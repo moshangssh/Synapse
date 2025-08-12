@@ -32,3 +32,5 @@ UI/
 frontend/synapse/.env
 
 youhua
+.bmad-core/
+.roomdes
