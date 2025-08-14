@@ -71,7 +71,8 @@ def _connect_to_resolve(force_reconnect=False):
 
     try:
         # The official documentation is wrong, the scriptapp is in the fusionscript module
-        import fusionscript as dvr_script
+        # Use importlib to avoid static analysis warnings in development environments
+        dvr_script = importlib.import_module('fusionscript')
     except ImportError:
         # Keep the original as a fallback
         pass

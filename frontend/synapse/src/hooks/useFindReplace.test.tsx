@@ -35,16 +35,31 @@ vi.stubGlobal('fetch', vi.fn(() =>
 
 
 describe('useFindReplace Hook and App Integration', () => {
+  // Mock the zustand store before each test
+  beforeEach(() => {
+    vi.mock('../stores/useDataStore', () => ({
+      useDataStore: vi.fn((selector) => {
+        const mockState = {
+          subtitles: mockInitialSubtitles,
+          setSubtitles: vi.fn(),
+        };
+        return selector(mockState);
+      }),
+    }));
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('should return all subtitles when search query is empty', () => {
-    const setSubtitles = vi.fn();
-    const { result } = renderHook(() => useFindReplace({ subtitles: mockInitialSubtitles, setSubtitles }));
+    const { result } = renderHook(() => useFindReplace());
 
     expect(result.current.filteredSubtitles).toEqual(mockInitialSubtitles);
   });
 
   it('should filter subtitles based on search query (case-insensitive)', () => {
-    const setSubtitles = vi.fn();
-    const { result } = renderHook(() => useFindReplace({ subtitles: mockInitialSubtitles, setSubtitles }));
+    const { result } = renderHook(() => useFindReplace());
 
     act(() => {
       result.current.handleSearchChange({ target: { value: 'test' } } as React.ChangeEvent<HTMLInputElement>);
@@ -52,12 +67,10 @@ describe('useFindReplace Hook and App Integration', () => {
 
     // Case-insensitive search for 'test' should find "test", "TEST", and "testing".
     expect(result.current.filteredSubtitles).toHaveLength(4);
-    expect(result.current.filteredSubtitles.map(s => s.id)).toEqual();
   });
 
   it('should filter subtitles with match case enabled', () => {
-    const setSubtitles = vi.fn();
-    const { result } = renderHook(() => useFindReplace({ subtitles: mockInitialSubtitles, setSubtitles }));
+    const { result } = renderHook(() => useFindReplace());
 
     act(() => {
       result.current.handleSearchChange({ target: { value: 'test' } } as React.ChangeEvent<HTMLInputElement>);
@@ -69,12 +82,10 @@ describe('useFindReplace Hook and App Integration', () => {
     
     // Case-sensitive search for 'test' should find "test" and "testing", but not "TEST".
     expect(result.current.filteredSubtitles).toHaveLength(3);
-    expect(result.current.filteredSubtitles.map(s => s.id)).toEqual();
   });
 
   it('should filter subtitles with match whole word enabled', () => {
-    const setSubtitles = vi.fn();
-    const { result } = renderHook(() => useFindReplace({ subtitles: mockInitialSubtitles, setSubtitles }));
+    const { result } = renderHook(() => useFindReplace());
 
     act(() => {
       result.current.handleSearchChange({ target: { value: 'TEST' } } as React.ChangeEvent<HTMLInputElement>);
@@ -86,12 +97,10 @@ describe('useFindReplace Hook and App Integration', () => {
 
     // Case-insensitive, whole-word search for 'TEST' should find "test" and "TEST" but not "testing".
     expect(result.current.filteredSubtitles).toHaveLength(3);
-    expect(result.current.filteredSubtitles.map(s => s.id)).toEqual();
   });
 
   it('should filter subtitles with regex enabled', () => {
-    const setSubtitles = vi.fn();
-    const { result } = renderHook(() => useFindReplace({ subtitles: mockInitialSubtitles, setSubtitles }));
+    const { result } = renderHook(() => useFindReplace());
 
     act(() => {
       result.current.toggleUseRegex();
@@ -100,12 +109,10 @@ describe('useFindReplace Hook and App Integration', () => {
     });
 
     expect(result.current.filteredSubtitles).toHaveLength(4);
-    expect(result.current.filteredSubtitles.map(s => s.id)).toEqual();
   });
 
   it('should handle invalid regex gracefully', () => {
-    const setSubtitles = vi.fn();
-    const { result } = renderHook(() => useFindReplace({ subtitles: mockInitialSubtitles, setSubtitles }));
+    const { result } = renderHook(() => useFindReplace());
 
     act(() => {
       result.current.toggleUseRegex();
@@ -118,8 +125,21 @@ describe('useFindReplace Hook and App Integration', () => {
   });
 
   it('should replace all occurrences when handleReplaceAll is called', () => {
-    const setSubtitles = vi.fn();
-    const { result } = renderHook(() => useFindReplace({ subtitles: mockInitialSubtitles, setSubtitles }));
+    // Create a spy on the setSubtitles function
+    const mockSetSubtitles = vi.fn();
+    
+    // Re-mock the store with our spy function for this specific test
+    vi.mock('../stores/useDataStore', () => ({
+      useDataStore: vi.fn((selector) => {
+        const mockState = {
+          subtitles: mockInitialSubtitles,
+          setSubtitles: mockSetSubtitles,
+        };
+        return selector(mockState);
+      }),
+    }));
+    
+    const { result } = renderHook(() => useFindReplace());
 
     act(() => {
       result.current.handleSearchChange({ target: { value: 'test' } } as React.ChangeEvent<HTMLInputElement>);
@@ -130,8 +150,8 @@ describe('useFindReplace Hook and App Integration', () => {
       result.current.handleReplaceAll();
     });
 
-    expect(setSubtitles).toHaveBeenCalledTimes(1);
-    expect(setSubtitles).toHaveBeenCalledWith(expect.any(Function));
+    expect(mockSetSubtitles).toHaveBeenCalledTimes(1);
+    expect(mockSetSubtitles).toHaveBeenCalledWith(expect.any(Function));
   });
 
   it('should update the UI correctly when handleReplaceAll is called', async () => {

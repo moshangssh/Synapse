@@ -6,6 +6,11 @@ import { useSettingsStore } from '../stores/useSettingsStore';
 import useNotifier from '../hooks/useNotifier';
 import { calculateDiff } from '../utils/diff';
 
+// 转义正则表达式特殊字符
+function escapeRegExp(string: string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& 表示匹配到的子字符串
+}
+
 export function FillerWordRemover() {
   const { subtitles, setSubtitles } = useDataStore();
   const { fillerWords, loadFillerWords } = useSettingsStore();
@@ -27,7 +32,9 @@ export function FillerWordRemover() {
     try {
       // For Chinese, word boundaries \b are not effective.
       // We will match the words directly.
-      const fillerWordsRegex = new RegExp(fillerWords.join('|'), 'g');
+      // 对每个口水词进行转义以防止正则表达式注入
+      const escapedWords = fillerWords.map(escapeRegExp);
+      const fillerWordsRegex = new RegExp(escapedWords.join('|'), 'g');
       
       let changesMade = false;
       const updatedSubtitles = subtitles.map(subtitle => {

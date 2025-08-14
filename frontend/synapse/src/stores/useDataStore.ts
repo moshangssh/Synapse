@@ -3,7 +3,7 @@ import { Subtitle, SubtitleTrack, ProjectInfo, ImportedSubtitleFile, ApiError } 
 import { calculateDiff } from '../utils/diff';
 
 // 创建一个WeakMap来缓存diff计算结果
-const diffCache = new WeakMap<Subtitle, Map<string, any>>();
+const diffCache = new WeakMap<Subtitle, Map<string, Map<string, any>>>();
 
 type Status = 'connected' | 'connecting' | 'error' | 'disconnected';
 
@@ -115,12 +115,18 @@ export const useDataStore = create<DataState>((set, get) => {
                             diffCache.set(sub, new Map());
                         }
                         const subCache = diffCache.get(sub)!;
-                        const cacheKey = `${originalText}__${newText}`;
-                        if (subCache.has(cacheKey)) {
-                            diffs = subCache.get(cacheKey);
+                        
+                        // 使用嵌套Map来避免字符串拼接键可能的冲突
+                        if (!subCache.has(originalText)) {
+                            subCache.set(originalText, new Map());
+                        }
+                        const textCache = subCache.get(originalText)!;
+                        
+                        if (textCache.has(newText)) {
+                            diffs = textCache.get(newText);
                         } else {
                             diffs = calculateDiff(originalText, newText);
-                            subCache.set(cacheKey, diffs);
+                            textCache.set(newText, diffs);
                         }
                     }
 
