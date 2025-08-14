@@ -2,7 +2,8 @@ from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Union
 
-from resolve_utils import get_resolve_subtitles, set_resolve_timecode, generate_srt_content, export_to_davinci, get_resolve_project_info, get_subtitle_tracks
+from davinci_api import get_resolve_subtitles, set_resolve_timecode, export_to_davinci, get_resolve_project_info, get_subtitle_tracks
+from srt_utils import generate_srt_content
 from schemas import (
     SubtitleItem,
     SuccessResponse,
@@ -11,7 +12,12 @@ from schemas import (
     SubtitleExportRequest,
     SubtitleTrackInfo,
     SubtitleTrackListResponse,
+    ResolveErrorCode,
 )
+
+# 在 ErrorResponse 中更新 code 字段的类型
+ErrorResponse.model_rebuild(force=True)
+
 
 app = FastAPI(
     title="DaVinci Resolve Subtitle Extractor API",
@@ -38,18 +44,24 @@ app.add_middleware(
 
 # --- 错误处理 ---
 
-def handle_error(error_code: str, error_message: str):
+def handle_error(error_code: Union[ResolveErrorCode, str], error_message: str):
     """根据错误代码，抛出相应的HTTPException。"""
-    if error_code in ["resolve_not_running", "connection_error"]:
+    if error_code in [ResolveErrorCode.RESOLVE_NOT_RUNNING, ResolveErrorCode.CONNECTION_ERROR]:
         raise HTTPException(status_code=503, detail={"status": "error", "message": error_message, "code": error_code})
-    elif error_code in ["no_project_open", "no_active_timeline"]:
+    elif error_code in [ResolveErrorCode.NO_PROJECT_OPEN, ResolveErrorCode.NO_ACTIVE_TIMELINE]:
         raise HTTPException(status_code=404, detail={"status": "error", "message": error_message, "code": error_code})
-    elif error_code == "set_timecode_failed":
-        raise HTTPException(status_code=400, detail={"status": "error", "message": error_message, "code": error_code})
-    elif error_code == "dvr_script_not_found":
+    elif error_code in [ResolveErrorCode.GET_INFO_FAILED, ResolveErrorCode.CREATE_TRACK_FAILED]:
         raise HTTPException(status_code=500, detail={"status": "error", "message": error_message, "code": error_code})
-    else:
-        raise HTTPException(status_code=500, detail={"status": "error", "message": error_message, "code": error_code})
+    # For other string-based error codes that are not part of the enum yet
+    elif isinstance(error_code, str):
+        if error_code == "set_timecode_failed":
+            raise HTTPException(status_code=400, detail={"status": "error", "message": error_message, "code": error_code})
+        elif error_code == "dvr_script_not_found":
+            raise HTTPException(status_code=500, detail={"status": "error", "message": error_message, "code": error_code})
+        else: # Default for other string codes
+            raise HTTPException(status_code=500, detail={"status": "error", "message": error_message, "code": error_code})
+    else: # Default for any other case
+        raise HTTPException(status_code=500, detail={"status": "error", "message": error_message, "code": str(error_code)})
 
 
 # --- API 端点 ---

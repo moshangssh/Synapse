@@ -42,10 +42,20 @@ class SuccessResponse(BaseModel):
     frameRate: float
     data: List[SubtitleItem]
 
+class ResolveErrorCode(str, Enum):
+    RESOLVE_NOT_RUNNING = "resolve_not_running"
+    CONNECTION_ERROR = "connection_error"
+    NO_PROJECT_OPEN = "no_project_open"
+    NO_ACTIVE_TIMELINE = "no_active_timeline"
+    DVR_SCRIPT_NOT_FOUND = "dvr_script_not_found"
+    GET_INFO_FAILED = "get_info_failed"
+    CREATE_TRACK_FAILED = "create_track_failed"
+    UNKNOWN_ERROR = "unknown_error"
+
 class ErrorResponse(BaseModel):
     status: str = "error"
     message: str
-    code: str
+    code: Union[ResolveErrorCode, str]
 
 class JumpToOptions(str, Enum):
     start = "start"
@@ -56,3 +66,6 @@ class TimecodeRequest(BaseModel):
     in_point: str = Field(..., example="01:00:00:00", description="入点时间码，格式为 HH:MM:SS:FF")
     out_point: str = Field(..., example="01:00:10:00", description="出点时间码，格式为 HH:MM:SS:FF")
     jump_to: JumpToOptions = Field(..., description="跳转位置，可选值为 'start', 'end', 'middle'")
+
+# 为DiffPartModel添加别名，以保持向后兼容性
+DiffPart = DiffPartModel

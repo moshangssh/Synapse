@@ -13,9 +13,9 @@ if current_dir not in sys.path:
 # Now we can import from resolve_utils
 try:
     # Import the new helper function
-    from resolve_utils import _get_current_timeline
+    from davinci_connector import get_current_timeline
 except ImportError:
-    print("Error: Could not import from 'resolve_utils'. Make sure the file exists and is in the correct path.")
+    print("Error: Could not import from 'davinci_connector'. Make sure the file exists and is in the correct path.")
     sys.exit(1)
 
 def diagnose_subtitle_properties():
@@ -26,7 +26,7 @@ def diagnose_subtitle_properties():
     logging.info("Starting subtitle diagnosis...")
 
     # --- Get Timeline using the helper function ---
-    timeline, frame_rate, error = _get_current_timeline()
+    resolve, project, timeline, frame_rate, error = get_current_timeline()
 
     # --- Error Handling ---
     if error:
