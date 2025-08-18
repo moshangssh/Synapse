@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { calculateDiff } from '../utils/diff';
 import { useDataStore } from '../stores/useDataStore';
+import { buildRegex, filterSubtitles } from '../utils/filter';
 
 export const useFindReplace = () => {
   const subtitles = useDataStore((state) => state.subtitles);
@@ -11,20 +12,6 @@ export const useFindReplace = () => {
   const [matchCase, setMatchCase] = useState(false);
   const [matchWholeWord, setMatchWholeWord] = useState(false);
   const [useRegex, setUseRegex] = useState(false);
-
-const buildRegex = (searchQuery: string, useRegex: boolean, matchCase: boolean, matchWholeWord: boolean): RegExp | null => {
- if (!searchQuery) return null;
-
- try {
-   const pattern = useRegex ? searchQuery : searchQuery.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-   const flags = matchCase ? 'g' : 'gi';
-   const finalPattern = matchWholeWord ? `\\b${pattern}\\b` : pattern;
-   return new RegExp(finalPattern, flags);
- } catch (error) {
-   console.error("Invalid Regex:", error);
-   return null;
- }
-};
 
   const handleSearchChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(event.target.value);
@@ -43,15 +30,7 @@ const buildRegex = (searchQuery: string, useRegex: boolean, matchCase: boolean, 
   const toggleUseRegex = useCallback(() => setUseRegex(prev => !prev), []);
 
   const filteredSubtitles = useMemo(() => {
-    const regex = buildRegex(searchQuery, useRegex, matchCase, matchWholeWord);
-    if (!regex) {
-      return subtitles;
-    }
-
-    return subtitles.filter(sub => {
-      regex.lastIndex = 0; // Reset for stateful global regex
-      return regex.test(sub.text);
-    });
+    return filterSubtitles(subtitles, { searchQuery, useRegex, matchCase, matchWholeWord });
   }, [subtitles, searchQuery, matchCase, matchWholeWord, useRegex]);
 
   const handleReplaceAll = useCallback(() => {

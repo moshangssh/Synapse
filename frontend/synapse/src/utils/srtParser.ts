@@ -114,10 +114,10 @@ export const validateSRTContent = (content: string): { isValid: boolean; errors:
   
   // 检查每个块的基本结构
   for (let i = 0; i < blocks.length; i++) {
-    const lines = blocks[i].trim().split('\n');
+    const lines = blocks[i].trim().split('\n').filter(line => line.trim() !== '');
     
-    if (lines.length < 2) {
-      errors.push(`字幕块 ${i + 1} 结构不完整，至少需要2行`);
+    if (lines.length < 1) {
+      errors.push(`字幕块 ${i + 1} 结构不完整，至少需要1行`);
       continue;
     }
     
@@ -131,7 +131,7 @@ export const validateSRTContent = (content: string): { isValid: boolean; errors:
       if (trimmedLine.includes('-->')) {
         timeLine = trimmedLine;
         // 检查是否符合标准SRT时间码格式（包含毫秒）
-        if (trimmedLine.match(/^(\d{2}:\d{2}:\d{2}[,.]\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}[,.]\d{3})$/)) {
+        if (trimmedLine.match(/^\d{2}:\d{2}:\d{2}[,.]\d{3}\s*-->\s*\d{2}:\d{2}:\d{2}[,.]\d{3}$/)) {
           hasTimecodeFormat = true;
         }
         break;

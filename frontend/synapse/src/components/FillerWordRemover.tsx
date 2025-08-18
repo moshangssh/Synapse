@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Button } from '@mui/material';
+import { useEffect, useState } from 'react';
+import { Button, Checkbox, FormControlLabel } from '@mui/material';
 import { Trash2 } from 'lucide-react';
 import { useDataStore } from '../stores/useDataStore';
 import { useSettingsStore } from '../stores/useSettingsStore';
@@ -15,6 +15,7 @@ export function FillerWordRemover() {
   const { subtitles, setSubtitles } = useDataStore();
   const { fillerWords, loadFillerWords } = useSettingsStore();
   const notify = useNotifier();
+  const [removePunctuation, setRemovePunctuation] = useState(false);
 
   useEffect(() => {
     // Load filler words when the component mounts
@@ -39,7 +40,14 @@ export function FillerWordRemover() {
       let changesMade = false;
       const updatedSubtitles = subtitles.map(subtitle => {
         // Replace filler words with an empty string and remove consecutive spaces that might result
-        const cleanedText = subtitle.text.replace(fillerWordsRegex, '').replace(/\s+/g, ' ').trim();
+        let cleanedText = subtitle.text.replace(fillerWordsRegex, '').replace(/\s+/g, ' ').trim();
+        
+        // 只有当用户选择移除标点符号时才执行此操作
+        if (removePunctuation) {
+          // Replace all punctuation marks except book title marks《》and double quotes"" with spaces
+          // This regex matches all punctuation except Chinese book title marks《》and double quotes""
+          cleanedText = cleanedText.replace(/[^\w\s\u4e00-\u9fff《》"]/g, ' ').replace(/\s+/g, ' ').trim();
+        }
         
         if (cleanedText !== subtitle.text) {
           changesMade = true;
@@ -50,8 +58,19 @@ export function FillerWordRemover() {
       });
 
       if (changesMade) {
+        const originalSubtitles = [...subtitles]; // 创建一个副本用于撤销
         setSubtitles(updatedSubtitles);
-        notify.success('已成功移除所有口水词！');
+        notify.success('已成功移除所有口水词！', {
+          action: () => (
+            <Button color="inherit" size="small" onClick={() => {
+              setSubtitles(originalSubtitles);
+              // 可选：在撤销后关闭 snackbar
+              // closeSnackbar(key);
+            }}>
+              撤销
+            </Button>
+          ),
+        });
       } else {
         notify.info('未发现可移除的口水词。');
       }
@@ -62,13 +81,26 @@ export function FillerWordRemover() {
   };
 
   return (
-    <Button
-      variant="contained"
-      startIcon={<Trash2 size={16} />}
-      onClick={handleRemoveFillerWords}
-      disabled={fillerWords.length === 0 || subtitles.length === 0}
-    >
-      一键去口水词
-    </Button>
+    <div>
+      <FormControlLabel
+        control={
+          <Checkbox
+            checked={removePunctuation}
+            onChange={(e) => setRemovePunctuation(e.target.checked)}
+            color="primary"
+          />
+        }
+        label="同时移除标点符号 (谨慎操作)"
+      />
+      <Button
+        variant="contained"
+        startIcon={<Trash2 size={16} />}
+        onClick={handleRemoveFillerWords}
+        disabled={fillerWords.length === 0 || subtitles.length === 0}
+        sx={{ mt: 1 }}
+      >
+        一键去口水词
+      </Button>
+    </div>
   );
 }

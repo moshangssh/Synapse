@@ -130,7 +130,11 @@ const EditableSubtitleCell: React.FC<EditableSubtitleCellProps> = ({
         />
       ) : (
         <div style={textDisplayStyle}>
-          <DiffHighlighter diffs={row.diffs || []} />
+          {row.diffs && row.diffs.length > 0 ? (
+            <DiffHighlighter diffs={row.diffs} />
+          ) : (
+            <p>{row.text}</p>
+          )}
         </div>
       )}
     </TableCell>

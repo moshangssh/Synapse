@@ -15,12 +15,11 @@ import { Subtitle } from '../../types';
 import { useUIStore } from '../../stores/useUIStore';
 import { useDataStore } from '../../stores/useDataStore';
 import useNotifier from '../../hooks/useNotifier';
-
+import { useExport } from '../../hooks/useExport';
 export function MainLayout() {
   const notify = useNotifier();
   const {
     activeView,
-    setActiveView,
     sidebarWidth,
     isSidebarOpen,
     setSidebarWidth,
@@ -28,6 +27,7 @@ export function MainLayout() {
     setActiveTrackIndex,
     setSelectedSubtitleId,
   } = useUIStore();
+
   const {
     setSubtitles,
     setFrameRate,
@@ -35,11 +35,10 @@ export function MainLayout() {
     setErrorMessage,
     setProjectInfo,
     setSubtitleTracks,
-    handleExport,
-    handleExportToDavinci,
     subtitles,
     errorMessage: currentErrorMessage,
   } = useDataStore();
+  const { exportToSrt, exportToDavinci } = useExport();
 
   const [loading, setLoading] = useState(false);
   const [jumpToSubtitleId, setJumpToSubtitleId] = useState<number | null>(null);
@@ -229,9 +228,9 @@ export function MainLayout() {
   }, [handleMouseMove, handleMouseUp]);
 
   const onExportSRT = async () => {
-    try {
-      const srtContent = await handleExport();
-      const blob = new Blob([srtContent], {
+    const result = await exportToSrt();
+    if (result.success) {
+      const blob = new Blob([result.data!], {
         type: "text/plain;charset=utf-8",
       });
       const url = URL.createObjectURL(blob);
@@ -242,18 +241,20 @@ export function MainLayout() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      notify.success('SRT导出成功！');
-    } catch (error: any) {
-      notify.error(error.message || '导出SRT时发生未知错误');
+      notify.success(result.message);
+    } else {
+      // Error message is handled by the hook, but we can still show a generic message if needed
+      // notify.error(result.message);
     }
   };
 
   const onExportToDavinci = async () => {
-    const result = await handleExportToDavinci();
+    const result = await exportToDavinci();
     if (result.success) {
       notify.success(result.message);
     } else {
-      notify.error(result.message);
+      // Error message is handled by the hook, but we can still show a generic message if needed
+      // notify.error(result.message);
     }
   };
 

@@ -34,3 +34,5 @@ frontend/synapse/.env
 youhua
 .bmad-core/
 .roomdes
+backend_code.xml
+frontend_code.xml

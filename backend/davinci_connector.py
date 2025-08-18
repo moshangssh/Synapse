@@ -3,6 +3,7 @@ import os
 import logging
 import importlib.util
 from schemas import ResolveErrorCode
+from exceptions import ResolveConnectionError, NoProjectOpenError, NoActiveTimelineError
 
 # Configure logging
 log_file = os.path.join(os.path.dirname(__file__), 'resolve_connection.log')
@@ -67,7 +68,7 @@ def _connect_to_resolve(force_reconnect=False):
     dvr_script = _get_resolve_bmd()
     if not dvr_script:
         logging.error("DaVinci Resolve Scripting API module not found.")
-        return None, {"code": ResolveErrorCode.DVR_SCRIPT_NOT_FOUND, "message": "DaVinci Resolve Scripting API module not found."}
+        raise ResolveConnectionError("DaVinci Resolve Scripting API module not found.")
 
     try:
         # The official documentation is wrong, the scriptapp is in the fusionscript module
@@ -83,15 +84,15 @@ def _connect_to_resolve(force_reconnect=False):
         if not resolve:
             logging.error("无法连接到 DaVinci Resolve。请确保 Resolve 正在运行。")
             _resolve_connection = None # Clear connection on failure
-            return None, {"code": ResolveErrorCode.RESOLVE_NOT_RUNNING, "message": "无法连接到 DaVinci Resolve。请确保 Resolve 正在运行。"}
+            raise ResolveConnectionError("无法连接到 DaVinci Resolve。请确保 Resolve 正在运行。")
         
         logging.info("成功连接到 DaVinci Resolve。")
         _resolve_connection = resolve # Cache the connection
-        return resolve, None
+        return resolve
     except Exception as e:
         logging.error(f"连接 DaVinci Resolve 时发生未知错误: {e}", exc_info=True)
         _resolve_connection = None # Clear connection on exception
-        return None, {"code": ResolveErrorCode.CONNECTION_ERROR, "message": f"连接 DaVinci Resolve 时发生未知错误: {e}"}
+        raise ResolveConnectionError(f"连接 DaVinci Resolve 时发生未知错误: {e}")
 
 
 def get_current_timeline():
@@ -100,35 +101,31 @@ def get_current_timeline():
     It will attempt to reconnect if the connection is lost.
 
     Returns:
-        A tuple (resolve, project, timeline, frame_rate, error), where resolve is the DaVinci Resolve
-        connection object, project is the current project object, timeline is the DaVinci Resolve
-        timeline object, frame_rate is a float, and error is a dictionary
-        with 'code' and 'message' if an error occurs.
+        A tuple (resolve, project, timeline, frame_rate).
+    
+    Raises:
+        ResolveConnectionError: If it cannot connect to Resolve.
+        NoProjectOpenError: If no project is currently open.
+        NoActiveTimelineError: If no timeline is active in the current project.
     """
-    resolve, error = _connect_to_resolve()
-    if error:
-        return None, None, None, None, error
-
     try:
-        # First, try to get the project manager to check if the connection is alive
+        resolve = _connect_to_resolve()
         projectManager = resolve.GetProjectManager()
         project = projectManager.GetCurrentProject()
         if not project:
-            return None, None, None, None, {"code": ResolveErrorCode.NO_PROJECT_OPEN, "message": "未找到当前打开的项目。"}
+            raise NoProjectOpenError("未找到当前打开的项目。")
     except Exception as e:
         logging.warning(f"DaVinci Resolve 连接可能已断开，正在尝试重新连接... 错误: {e}")
-        resolve, error = _connect_to_resolve(force_reconnect=True)
-        if error:
-            return None, None, None, None, error
+        resolve = _connect_to_resolve(force_reconnect=True)
         projectManager = resolve.GetProjectManager()
         project = projectManager.GetCurrentProject()
         if not project:
-            return None, None, None, None, {"code": ResolveErrorCode.NO_PROJECT_OPEN, "message": "重新连接后仍未找到当前打开的项目。"}
+            raise NoProjectOpenError("重新连接后仍未找到当前打开的项目。")
 
 
     timeline = project.GetCurrentTimeline()
     if not timeline:
-        return None, None, None, None, {"code": ResolveErrorCode.NO_ACTIVE_TIMELINE, "message": "项目中没有活动的（当前）时间线。"}
+        raise NoActiveTimelineError("项目中没有活动的（当前）时间线。")
     
     try:
         frame_rate_str = timeline.GetSetting('timelineFrameRate')
@@ -137,4 +134,4 @@ def get_current_timeline():
         logging.warning("无法获取时间线帧率，将使用默认值 24.0。")
         frame_rate = 24.0 # Default to a common frame rate
 
-    return resolve, project, timeline, frame_rate, None
+    return resolve, project, timeline, frame_rate

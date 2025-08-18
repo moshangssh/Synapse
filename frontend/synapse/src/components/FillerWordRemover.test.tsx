@@ -22,6 +22,7 @@ const mockSubtitles = [
   { id: 2, text: '嗯，是的，然后我们继续。', originalText: '嗯，是的，然后我们继续。', diffs: [] },
   { id: 3, text: '这是一个正常的句子。', originalText: '这是一个正常的句子。', diffs: [] },
   { id: 4, text: '你知道吗其实这个东西很棒', originalText: '你知道吗其实这个东西很棒', diffs: [] },
+  { id: 5, text: '这是《书名》和"引用"的测试！@#￥%……&*（）', originalText: '这是《书名》和"引用"的测试！@#￥%……&*（）', diffs: [] },
 ];
 
 describe('FillerWordRemover', () => {
@@ -45,10 +46,11 @@ describe('FillerWordRemover', () => {
 
     expect(setSubtitles).toHaveBeenCalledWith(
       expect.arrayContaining([
-        expect.objectContaining({ id: 1, text: '，我想说， 这个很好。', diffs: expect.any(Array) }),
-        expect.objectContaining({ id: 2, text: '，是的， 我们继续。', diffs: expect.any(Array) }),
-        expect.objectContaining({ id: 3, text: '这是一个正常的句子。' }), // No changes, so diffs might not be there
+        expect.objectContaining({ id: 1, text: '，我想说， 这个很好 ', diffs: expect.any(Array) }),
+        expect.objectContaining({ id: 2, text: '，是的， 我们继续 ', diffs: expect.any(Array) }),
+        expect.objectContaining({ id: 3, text: '这是一个正常的句子 ', diffs: expect.any(Array) }),
         expect.objectContaining({ id: 4, text: '这个东西很棒', diffs: expect.any(Array) }),
+        expect.objectContaining({ id: 5, text: '这是《书名》和"引用"的测试 ', diffs: expect.any(Array) }),
       ])
     );
     expect(mockNotify.success).toHaveBeenCalledWith('已成功移除所有口水词！');

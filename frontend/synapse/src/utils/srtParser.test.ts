@@ -1,5 +1,4 @@
 import { parseSRTFile, validateSRTContent } from './srtParser';
-import { ImportedSubtitleFile } from '../types';
 
 describe('srtParser', () => {
   describe('parseSRTFile', () => {
@@ -83,6 +82,34 @@ Another subtitle
       expect(result.subtitles[0].id).toBe(1);
       expect(result.subtitles[1].id).toBe(2);
     });
+
+    it('should handle SRT files with special characters in text', () => {
+      const srtContent = `1
+00:00:01,000 --> 00:00:04,000
+Subtitle with special characters: @#$%^&*()
+`;
+
+      const result = parseSRTFile(srtContent, 'special_chars.srt');
+      
+      expect(result.subtitles).toHaveLength(1);
+      expect(result.subtitles[0].text).toBe('Subtitle with special characters: @#$%^&*()');
+    });
+
+    it('should handle SRT files with multi-language text', () => {
+      const srtContent = `1
+00:00:01,000 --> 00:00:04,000
+English text
+英文文本
+日本語のテキスト
+`;
+
+      const result = parseSRTFile(srtContent, 'multi_lang.srt');
+      
+      expect(result.subtitles).toHaveLength(1);
+      expect(result.subtitles[0].text).toContain('English text');
+      expect(result.subtitles[0].text).toContain('英文文本');
+      expect(result.subtitles[0].text).toContain('日本語のテキスト');
+    });
   });
 
   describe('validateSRTContent', () => {
@@ -118,6 +145,32 @@ Invalid timecode format
       const result = validateSRTContent(srtContent);
       expect(result.isValid).toBe(false);
       expect(result.errors).toContain('字幕块 1 时间码格式不正确: "00:00:01 --> 00:00:04"');
+    });
+
+    it('should detect SRT content with only timecode and no text', () => {
+      const srtContent = `1
+00:00:01,000 --> 00:00:04,000
+`;
+
+      const result = validateSRTContent(srtContent);
+      // 根据当前实现，这应该被认为是有效的，因为parseSRTFile可以处理这种情况
+      // 但我们可以在测试中明确这一点
+      expect(result.isValid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it('should handle SRT content with extra whitespace', () => {
+      const srtContent = `1
+
+00:00:01,000 --> 00:00:04,000
+
+Subtitle with extra whitespace
+
+`;
+
+      const result = validateSRTContent(srtContent);
+      expect(result.isValid).toBe(true);
+      expect(result.errors).toHaveLength(0);
     });
   });
 });

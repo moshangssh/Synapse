@@ -32,7 +32,7 @@
       ]
     },
     "mcp-server-time": {
-      "command": "uvx",
+      "command": "uv",
       "args": [
         "mcp-server-time",
         "--local-timezone=Asia/Shanghai"
