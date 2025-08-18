@@ -85,17 +85,17 @@ export function TitleBar() {
 
   return (
     <Box
-      sx={{
-        height: 30,
-        backgroundColor: '#252526',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingLeft: 1,
-        userSelect: 'none',
-        borderBottom: '1px solid #3c3c3c',
-      }}
-    >
+          sx={{
+            height: 30,
+            backgroundColor: '#1E1E1E',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingLeft: 1,
+            userSelect: 'none',
+            borderBottom: '1px solid #3c3c3c',
+          }}
+        >
       <Box data-tauri-drag-region sx={{ flexGrow: 1, height: '100%' }} />
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
         <IconButton

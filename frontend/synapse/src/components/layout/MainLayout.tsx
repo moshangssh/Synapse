@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Box, Paper, Typography, Button } from '@mui/material';
+import { Box, Paper, Typography, Button, ThemeProvider as MuiThemeProvider } from '@mui/material';
 import { Download, Send } from 'lucide-react';
-import { ThemeProvider } from './ThemeProvider';
+import { darkTheme, lightTheme } from './ThemeProvider';
 import { ActivityBar } from './ActivityBar';
 import { FileExplorer } from './FileExplorer';
 import { OptimizerSidebar } from './OptimizerSidebar';
@@ -16,8 +16,10 @@ import { useUIStore } from '../../stores/useUIStore';
 import { useDataStore } from '../../stores/useDataStore';
 import useNotifier from '../../hooks/useNotifier';
 import { useExport } from '../../hooks/useExport';
+import { useSettingsStore } from '../../stores/useSettingsStore';
 export function MainLayout() {
   const notify = useNotifier();
+  const themeMode = useSettingsStore((state) => state.theme);
   const {
     activeView,
     sidebarWidth,
@@ -260,12 +262,12 @@ export function MainLayout() {
 
   const renderSidebar = () => {
     const commonPaperStyles = {
-      width: '100%',
-      height: '100%',
-      backgroundColor: '#252526',
-      borderRadius: 0,
-      borderRight: '1px solid #3c3c3c',
-    };
+          width: '100%',
+          height: '100%',
+          backgroundColor: '#1E1E1E',
+          borderRadius: 0,
+          borderRight: '1px solid #3c3c3c',
+        };
 
     switch (activeView) {
       case 'explorer':
@@ -347,7 +349,7 @@ export function MainLayout() {
   };
 
   return (
-    <ThemeProvider>
+    <MuiThemeProvider theme={themeMode === 'dark' ? darkTheme : lightTheme}>
       <Box
         sx={{
           height: '100vh',
@@ -407,6 +409,6 @@ export function MainLayout() {
         {/* Status Bar */}
         <StatusBar />
       </Box>
-    </ThemeProvider>
+    </MuiThemeProvider>
   );
 }

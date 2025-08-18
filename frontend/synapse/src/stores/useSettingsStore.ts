@@ -1,11 +1,14 @@
 import { create } from 'zustand';
 
 interface SettingsState {
+  theme: 'light' | 'dark';
   fillerWords: string[];
   loadFillerWords: () => Promise<void>;
+  toggleTheme: () => void;
 }
 
 export const useSettingsStore = create<SettingsState>((set) => ({
+  theme: 'dark', // Default to dark theme
   fillerWords: [],
   loadFillerWords: async () => {
     try {
@@ -25,4 +28,5 @@ export const useSettingsStore = create<SettingsState>((set) => ({
       set({ fillerWords: [] });
     }
   },
+  toggleTheme: () => set((state) => ({ theme: state.theme === 'dark' ? 'light' : 'dark' })),
 }));

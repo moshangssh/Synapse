@@ -16,18 +16,37 @@ export function OptimizerSidebar() {
           Optimizer
         </Typography>
       </Box>
-      <Accordion defaultExpanded sx={{ backgroundColor: '#2c2c2c', color: '#cccccc' }}>
+      <Accordion
+        defaultExpanded
+        sx={{
+          backgroundColor: '#2c2c2c',
+          color: '#cccccc',
+          boxShadow: 'none',
+          '&:before': {
+            display: 'none',
+          },
+          margin: '0 !important',
+        }}
+      >
         <AccordionSummary
-          expandIcon={<ChevronDown size={18} />}
+          expandIcon={<ChevronDown size={16} />}
           sx={{
+            minHeight: '32px',
+            '&.Mui-expanded': {
+              minHeight: '32px',
+            },
             '& .MuiAccordionSummary-content': {
               fontWeight: 'bold',
+              margin: '6px 0',
+              '&.Mui-expanded': {
+                margin: '6px 0',
+              },
             },
           }}
         >
-          <Typography>Simple Mode</Typography>
+          <Typography sx={{ fontSize: '0.85rem' }}>Simple Mode</Typography>
         </AccordionSummary>
-        <AccordionDetails>
+        <AccordionDetails sx={{ p: 0.5 }}>
           <FillerWordRemover />
         </AccordionDetails>
       </Accordion>

@@ -61,13 +61,13 @@ export function FileExplorer({
 
   return (
     <Paper
-      sx={{
-        height: '100%',
-        backgroundColor: '#252526',
-        borderRadius: 0,
-        borderRight: '1px solid #3c3c3c',
-      }}
-    >
+          sx={{
+            height: '100%',
+            backgroundColor: '#1E1E1E',
+            borderRadius: 0,
+            borderRight: '1px solid #3c3c3c',
+          }}
+        >
       <Box sx={{ p: 1.5, borderBottom: '1px solid #3c3c3c', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="h6" sx={{ color: '#cccccc' }}>
           字幕源

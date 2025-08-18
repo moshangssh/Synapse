@@ -1,8 +1,6 @@
-import { createTheme, ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
-import { CssBaseline } from '@mui/material';
-import { ReactNode } from 'react';
+import { createTheme } from '@mui/material/styles';
 
-const theme = createTheme({
+export const darkTheme = createTheme({
   palette: {
     mode: 'dark',
     background: {
@@ -22,58 +20,42 @@ const theme = createTheme({
     },
     divider: '#3c3c3c',
     action: {
-      hover: '#37373d',
-      selected: '#37373d',
+      hover: 'rgba(255, 255, 255, 0.08)',
+      selected: 'rgba(255, 255, 255, 0.16)',
     },
   },
   typography: {
     fontSize: 12,
     fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
-    h6: {
-      fontSize: '0.75rem',
-      textTransform: 'uppercase',
-      letterSpacing: '0.05em',
-      fontWeight: 400,
-    },
-  },
-  components: {
-    MuiCssBaseline: {
-      styleOverrides: {
-        body: {
-          backgroundColor: '#1e1e1e',
-          color: '#cccccc',
-          fontSize: '12px',
-        },
-      },
-    },
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          textTransform: 'none',
-          minWidth: 'auto',
-          padding: '8px',
-        },
-      },
-    },
-    MuiPaper: {
-      styleOverrides: {
-        root: {
-          backgroundImage: 'none',
-        },
-      },
-    },
   },
 });
 
-interface ThemeProviderProps {
-  children: ReactNode;
-}
-
-export function ThemeProvider({ children }: ThemeProviderProps) {
-  return (
-    <MuiThemeProvider theme={theme}>
-      <CssBaseline />
-      {children}
-    </MuiThemeProvider>
-  );
-}
+export const lightTheme = createTheme({
+  palette: {
+    mode: 'light',
+    background: {
+      default: '#ffffff',
+      paper: '#f5f5f5',
+    },
+    text: {
+      primary: '#333333',
+      secondary: '#757575',
+    },
+    primary: {
+      main: '#007acc',
+      contrastText: '#ffffff',
+    },
+    secondary: {
+      main: '#e0e0e0',
+    },
+    divider: '#dcdcdc',
+    action: {
+      hover: 'rgba(0, 0, 0, 0.04)',
+      selected: 'rgba(0, 0, 0, 0.08)',
+    },
+  },
+  typography: {
+    fontSize: 12,
+    fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
+  },
+});

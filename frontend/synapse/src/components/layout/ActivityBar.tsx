@@ -27,16 +27,16 @@ export function ActivityBar() {
 
   return (
     <Paper
-      sx={{
-        width: 48,
-        height: '100%',
-        backgroundColor: '#2c2c2c',
-        borderRadius: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        borderRight: '1px solid #3c3c3c',
-      }}
-    >
+          sx={{
+            width: 48,
+            height: '100%',
+            backgroundColor: '#1E1E1E',
+            borderRadius: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            borderRight: '1px solid #3c3c3c',
+          }}
+        >
       <Box sx={{ display: 'flex', flexDirection: 'column' }}>
         {items.map((item) => (
           <Tooltip key={item.id} title={item.label} placement="right">

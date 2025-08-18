@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Button, Checkbox, FormControlLabel } from '@mui/material';
+import { Button, Checkbox, FormControlLabel, Box, Typography } from '@mui/material';
 import { Trash2 } from 'lucide-react';
 import { useDataStore } from '../stores/useDataStore';
 import { useSettingsStore } from '../stores/useSettingsStore';
@@ -81,26 +81,34 @@ export function FillerWordRemover() {
   };
 
   return (
-    <div>
+    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
       <FormControlLabel
         control={
           <Checkbox
             checked={removePunctuation}
             onChange={(e) => setRemovePunctuation(e.target.checked)}
             color="primary"
+            size="small"
+            sx={{ p: '2px' }}
           />
         }
-        label="同时移除标点符号 (谨慎操作)"
+        label={
+          <Typography sx={{ fontSize: '0.75rem' }}>
+            同时移除标点符号 (谨慎操作)
+          </Typography>
+        }
+        sx={{ ml: 0 }}
       />
       <Button
         variant="contained"
-        startIcon={<Trash2 size={16} />}
+        startIcon={<Trash2 size={14} />}
         onClick={handleRemoveFillerWords}
         disabled={fillerWords.length === 0 || subtitles.length === 0}
-        sx={{ mt: 1 }}
+        size="small"
+        sx={{ mt: 0.5 }}
       >
         一键去口水词
       </Button>
-    </div>
+    </Box>
   );
 }

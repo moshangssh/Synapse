@@ -34,18 +34,18 @@ export function StatusBar() {
 
   return (
     <Paper
-      sx={{
-        height: 24,
-        backgroundColor: '#252526',
-        color: '#cccccc',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingX: 1.5,
-        borderRadius: 0,
-        borderTop: '1px solid #3c3c3c',
-      }}
-    >
+          sx={{
+            height: 24,
+            backgroundColor: '#1E1E1E',
+            color: '#cccccc',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingX: 1.5,
+            borderRadius: 0,
+            borderTop: '1px solid #3c3c3c',
+          }}
+        >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <Circle size={8} color={iconColor} />
