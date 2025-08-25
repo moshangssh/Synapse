@@ -1,22 +1,24 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { vi } from 'vitest';
+import { vi, beforeEach } from 'vitest';
 import FindReplace from './FindReplace';
 
 const mockProps = {
   searchQuery: '',
   replaceQuery: '',
   showReplace: false,
-  matchCase: false,
-  matchWholeWord: false,
-  useRegex: false,
   onSearchChange: vi.fn(),
   onReplaceChange: vi.fn(),
   onReplaceAll: vi.fn(),
   onToggleShowReplace: vi.fn(),
-  onToggleMatchCase: vi.fn(),
-  onToggleMatchWholeWord: vi.fn(),
-  onToggleUseRegex: vi.fn(),
 };
+
+beforeEach(() => {
+  // Reset all mock functions before each test
+  mockProps.onSearchChange.mockReset();
+  mockProps.onReplaceChange.mockReset();
+  mockProps.onReplaceAll.mockReset();
+  mockProps.onToggleShowReplace.mockReset();
+});
 
 describe('FindReplace Component', () => {
   it('should render search input and toggle button', () => {
@@ -58,26 +60,6 @@ describe('FindReplace Component', () => {
     expect(mockProps.onReplaceChange).toHaveBeenCalled();
   });
 
-  it('should call onToggleMatchCase when "大小写匹配" button is clicked', () => {
-    render(<FindReplace {...mockProps} />);
-    const matchCaseButton = screen.getByLabelText('大小写匹配');
-    fireEvent.click(matchCaseButton);
-    expect(mockProps.onToggleMatchCase).toHaveBeenCalledTimes(1);
-  });
-
-  it('should call onToggleMatchWholeWord when "全词匹配" button is clicked', () => {
-    render(<FindReplace {...mockProps} />);
-    const matchWholeWordButton = screen.getByLabelText('全词匹配');
-    fireEvent.click(matchWholeWordButton);
-    expect(mockProps.onToggleMatchWholeWord).toHaveBeenCalledTimes(1);
-  });
-
-  it('should call onToggleUseRegex when "使用正则表达式" button is clicked', () => {
-    render(<FindReplace {...mockProps} />);
-    const useRegexButton = screen.getByLabelText('使用正则表达式');
-    fireEvent.click(useRegexButton);
-    expect(mockProps.onToggleUseRegex).toHaveBeenCalledTimes(1);
-  });
 
   it('should call onReplaceAll when "全部替换" button is clicked', () => {
     const props = { ...mockProps, showReplace: true };

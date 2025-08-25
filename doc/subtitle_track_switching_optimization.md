@@ -55,11 +55,11 @@
 ### 3.3 轨道切换逻辑优化
 
 #### 保存当前轨道状态
-- **位置**: [`frontend/synapse/src/components/layout/MainLayout.tsx`](file:///C:/Users/qmzpgh/Desktop/Synapse/frontend/synapse/src/components/layout/MainLayout.tsx)
+- **位置**: [`frontend/synapse/src/components/layout/MainLayout.tsx`](file:///C:/Users/xdd/Desktop/Synapse/frontend/synapse/src/components/layout/MainLayout.tsx)
 - **实现**: 在 `useEffect` 钩子中，当 `activeTrackIndex` 即将改变时，调用 `useDataStore.getState().saveTrackDraft(prevActiveTrackIndex, subtitles)` 保存当前轨道的草稿状态。
 
 #### 恢复新轨道状态
-- **位置**: [`frontend/synapse/src/components/layout/MainLayout.tsx`](file:///C:/Users/qmzpgh/Desktop/Synapse/frontend/synapse/src/components/layout/MainLayout.tsx)
+- **位置**: [`frontend/synapse/src/components/layout/MainLayout.tsx`](file:///C:/Users/xdd/Desktop/Synapse/frontend/synapse/src/components/layout/MainLayout.tsx)
 - **实现**: 修改 `fetchSubtitles` 函数，在获取到后端数据后：
   1. 调用 `useDataStore.getState().loadTrackDraft(trackIndex)` 尝试加载新轨道的草稿状态。
   2. 如果 `loadTrackDraft` 返回了数据，则使用这些数据更新 `subtitles` 状态。
@@ -67,8 +67,8 @@
 
 ### 3.4 UI 集成
 
-#### 添加“重置当前字幕”按钮
-- **位置**: [`frontend/synapse/src/components/layout/FileExplorer.tsx`](file:///C:/Users/qmzpgh/Desktop/Synapse/frontend/synapse/src/components/layout/FileExplorer.tsx)
+#### 添加"重置当前字幕"按钮
+- **位置**: [`frontend/synapse/src/components/layout/FileExplorer.tsx`](file:///C:/Users/xdd/Desktop/Synapse/frontend/synapse/src/components/layout/FileExplorer.tsx)
 - **实现**:
   1. 在文件浏览器的标题栏添加一个“重置当前字幕”按钮。
   2. 按钮点击事件处理函数：
@@ -103,7 +103,7 @@
 ### 4.3 自动化测试建议
 
 1. **单元测试**: 为 `useDataStore` 中的核心方法编写单元测试。
-2. **集成测试**: 为 [`FileExplorer.tsx`](file:///C:/Users/qmzpgh/Desktop/Synapse/frontend/synapse/src/components/layout/FileExplorer.tsx) 和 [`MainLayout.tsx`](file:///C:/Users/qmzpgh/Desktop/Synapse/frontend/synapse/src/components/layout/MainLayout.tsx) 编写集成测试，验证UI交互和状态管理的正确性。
+2. **集成测试**: 为 [`FileExplorer.tsx`](file:///C:/Users/xdd/Desktop/Synapse/frontend/synapse/src/components/layout/FileExplorer.tsx) 和 [`MainLayout.tsx`](file:///C:/Users/xdd/Desktop/Synapse/frontend/synapse/src/components/layout/MainLayout.tsx) 编写集成测试，验证UI交互和状态管理的正确性。
 
 ## 5. 总结
 

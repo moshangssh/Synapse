@@ -4,28 +4,42 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Paper,
+  useTheme,
 } from '@mui/material';
 import { ChevronDown } from 'lucide-react';
 import { FillerWordRemover } from '../FillerWordRemover';
 
 export function OptimizerSidebar() {
+  const theme = useTheme();
+  
   return (
-    <Box sx={{ p: 1, height: '100%', color: '#cccccc', backgroundColor: '#252526' }}>
-      <Box sx={{ p: 1.5, borderBottom: '1px solid #3c3c3c', mb: 1 }}>
-        <Typography variant="h6" sx={{ color: '#cccccc' }}>
+    <Paper
+      sx={{
+        height: '100%',
+        backgroundColor: '#1E1E1E',
+        borderRadius: 0,
+        borderRight: `1px solid ${theme.palette.divider}`,
+      }}
+    >
+      <Box sx={{ p: 1.5, borderBottom: `1px solid ${theme.palette.divider}` }}>
+        <Typography variant="subtitle1" sx={{ color: theme.palette.text.primary, fontWeight: 500 }}>
           Optimizer
         </Typography>
       </Box>
       <Accordion
         defaultExpanded
         sx={{
-          backgroundColor: '#2c2c2c',
-          color: '#cccccc',
+          backgroundColor: 'transparent',
+          color: theme.palette.text.primary,
           boxShadow: 'none',
           '&:before': {
             display: 'none',
           },
           margin: '0 !important',
+          '&:hover': {
+            backgroundColor: theme.palette.action.hover,
+          },
         }}
       >
         <AccordionSummary
@@ -50,6 +64,6 @@ export function OptimizerSidebar() {
           <FillerWordRemover />
         </AccordionDetails>
       </Accordion>
-    </Box>
+    </Paper>
   );
 }

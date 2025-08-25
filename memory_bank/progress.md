@@ -329,7 +329,7 @@
 ### 任务：移除前端硬编码的API地址
 *   **ID:** `08692214-dd82-45f4-a225-5c260367c900`
 *   **描述:** 将`frontend/synapse/src/components/SubtitleTable.tsx`中硬编码的后端API地址`http://localhost:8000`移动到环境变量中。
-*   **实施指南:** 1. **创建.env文件**: 在`frontend/synapse`目录下创建一个`.env.local`文件。 2. **添加环境变量**: 在`.env.local`文件中添加`VITE_API_URL=http://localhost:8000`。 3. **更新代码**: 在`SubtitleTable.tsx`中，将硬编码的URL替换为`import.meta.env.VITE_API_URL`。 4. **更新.gitignore**: 确保`.env.local`已被添加到项目根目录的`.gitignore`文件中。
+*   **实施指南:** 1. **创建.env文件**: 在`frontend/synapse`目录下创建一个`.env.local`文件。 2. **添加环境变量**: 在`.env.local`文件中添加`VITE_API_BASE_URL=http://localhost:8000`。 3. **更新代码**: 在`SubtitleTable.tsx`中，将硬编码的URL替换为`import.meta.env.VITE_API_BASE_URL`。 4. **更新.gitignore**: 确保`.env.local`已被添加到项目根目录的`.gitignore`文件中。
 *   **验证标准:** 前端应用应能通过环境变量正确访问到后端API，并且硬编码的地址已从源代码中移除。
 *   **状态:** ✅ 成功
 *   **完成者:** NexusCore (协调), code-developer (执行)

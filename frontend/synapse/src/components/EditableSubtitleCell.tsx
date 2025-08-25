@@ -133,7 +133,7 @@ const EditableSubtitleCell: React.FC<EditableSubtitleCellProps> = ({
           {row.diffs && row.diffs.length > 0 ? (
             <DiffHighlighter diffs={row.diffs} />
           ) : (
-            <p>{row.text}</p>
+            <p style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{row.text}</p>
           )}
         </div>
       )}

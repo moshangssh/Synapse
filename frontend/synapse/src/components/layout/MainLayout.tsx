@@ -179,15 +179,9 @@ export function MainLayout() {
     searchQuery,
     replaceQuery,
     showReplace,
-    matchCase,
-    matchWholeWord,
-    useRegex,
     handleSearchChange,
     handleReplaceChange,
     toggleShowReplace,
-    toggleMatchCase,
-    toggleMatchWholeWord,
-    toggleUseRegex,
     handleReplaceAll,
     filteredSubtitles,
   } = useFindReplace();
@@ -282,7 +276,7 @@ export function MainLayout() {
         return (
           <Paper sx={commonPaperStyles}>
             <Box sx={{ p: 1.5, borderBottom: '1px solid #3c3c3c' }}>
-              <Typography variant="h6" sx={{ color: '#cccccc' }}>
+              <Typography variant="subtitle1" sx={{ color: '#cccccc', fontWeight: 500 }}>
                 Search
               </Typography>
             </Box>
@@ -291,16 +285,10 @@ export function MainLayout() {
                 searchQuery={searchQuery}
                 replaceQuery={replaceQuery}
                 showReplace={showReplace}
-                matchCase={matchCase}
-                matchWholeWord={matchWholeWord}
-                useRegex={useRegex}
                 onSearchChange={handleSearchChange}
                 onReplaceChange={handleReplaceChange}
                 onReplaceAll={handleReplaceAll}
                 onToggleShowReplace={toggleShowReplace}
-                onToggleMatchCase={toggleMatchCase}
-                onToggleMatchWholeWord={toggleMatchWholeWord}
-                onToggleUseRegex={toggleUseRegex}
               />
               {searchQuery && (
                 <SearchResults
@@ -317,7 +305,7 @@ export function MainLayout() {
         return (
           <Paper sx={commonPaperStyles}>
             <Box sx={{ p: 1.5, borderBottom: '1px solid #3c3c3c' }}>
-              <Typography variant="h6" sx={{ color: '#cccccc' }}>
+              <Typography variant="subtitle1" sx={{ color: '#cccccc', fontWeight: 500 }}>
                 Source Control
               </Typography>
             </Box>

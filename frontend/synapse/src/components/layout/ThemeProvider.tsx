@@ -28,6 +28,91 @@ export const darkTheme = createTheme({
     fontSize: 12,
     fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
   },
+  components: {
+    MuiButtonBase: {
+      styleOverrides: {
+        root: {
+          transition: 'background-color 0.15s ease-in-out, border-color 0.15s ease-in-out',
+        },
+      },
+    },
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          transition: 'border-color 0.15s ease-in-out',
+        },
+      },
+    },
+    // 统一所有按钮风格
+    MuiButton: {
+      defaultProps: {
+        variant: 'contained',
+      },
+      styleOverrides: {
+        root: {
+          textTransform: 'none', // VS Code按钮通常不是全大写
+          boxShadow: 'none',
+          borderRadius: '2px',
+          '&:hover': {
+            boxShadow: 'none',
+          },
+        },
+      },
+    },
+    // 统一输入框风格
+    MuiTextField: {
+      defaultProps: {
+        variant: 'outlined',
+        size: 'small',
+      },
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-root': {
+            backgroundColor: '#3c3c3c',
+            borderRadius: '2px',
+            '& fieldset': {
+              borderColor: '#464647',
+            },
+            '&:hover fieldset': {
+              borderColor: '#464647',
+            },
+            '&.Mui-focused fieldset': {
+              borderColor: '#007acc', // 焦点蓝色
+            },
+          },
+          '& .MuiInputBase-input': {
+            padding: '4px 8px',
+          },
+        },
+      },
+    },
+    // 统一Paper组件风格
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundImage: 'none', // 移除Material Design的渐变效果
+          backgroundColor: '#252526',
+          transition: 'background-color 0.15s ease-in-out',
+        },
+      },
+    },
+    // 统一列表项风格
+    MuiListItem: {
+      styleOverrides: {
+        root: {
+          '&:hover': {
+            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+          },
+          '&.Mui-selected': {
+            backgroundColor: 'rgba(255, 255, 255, 0.16)',
+          },
+          '&.Mui-selected:hover': {
+            backgroundColor: 'rgba(255, 255, 255, 0.24)',
+          },
+        },
+      },
+    },
+  },
 });
 
 export const lightTheme = createTheme({

@@ -1,8 +1,9 @@
-import { Box, IconButton, Tooltip, Paper } from '@mui/material';
+import { Box, IconButton, Tooltip, Paper, useTheme } from '@mui/material';
 import { Files, Search, Upload, Wand2 } from 'lucide-react';
 import { useUIStore } from '../../stores/useUIStore';
 
 export function ActivityBar() {
+  const theme = useTheme();
   const { activeView, setActiveView, isSidebarOpen, toggleSidebar } = useUIStore();
 
   const items = [
@@ -34,7 +35,7 @@ export function ActivityBar() {
             borderRadius: 0,
             display: 'flex',
             flexDirection: 'column',
-            borderRight: '1px solid #3c3c3c',
+            borderRight: `1px solid ${theme.palette.divider}`,
           }}
         >
       <Box sx={{ display: 'flex', flexDirection: 'column' }}>
@@ -48,7 +49,7 @@ export function ActivityBar() {
                 borderRadius: 0,
                 color: '#cccccc',
                 backgroundColor: activeView === item.id ? '#37373d' : 'transparent',
-                borderRight: activeView === item.id ? '2px solid #007acc' : 'none',
+                borderLeft: activeView === item.id ? `2px solid ${theme.palette.primary.main}` : 'none',
                 '&:hover': {
                   backgroundColor: '#37373d',
                 },

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Typography, List, ListItem, ListItemText, Paper, ListItemButton } from '@mui/material';
+import { Typography, List, ListItem, ListItemText, Paper, ListItemButton, useTheme } from '@mui/material';
 import { Subtitle } from '../types';
 import { scrollbarStyle } from './sharedStyles';
 
@@ -9,6 +9,7 @@ interface SearchResultsProps {
 }
 
 const SearchResults: React.FC<SearchResultsProps> = ({ subtitles, onResultClick }) => {
+  const theme = useTheme();
   return (
     <Paper elevation={0} sx={{ mt: 2, backgroundColor: 'transparent' }}>
       <Typography variant="body2" sx={{ color: '#cccccc', mb: 1 }}>
@@ -21,7 +22,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ subtitles, onResultClick 
               onClick={() => onResultClick(subtitle)}
               sx={{
                 '&:hover': {
-                  backgroundColor: '#37373d',
+                  backgroundColor: theme.palette.action.hover,
                 },
               }}
             >
@@ -29,7 +30,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ subtitles, onResultClick 
                 primary={subtitle.text}
                 primaryTypographyProps={{
                   style: {
-                    color: '#cccccc',
+                    color: theme.palette.text.primary,
                     fontSize: '0.8rem',
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',

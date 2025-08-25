@@ -1,4 +1,4 @@
-import { Box, IconButton } from '@mui/material';
+import { Box, IconButton, useTheme } from '@mui/material';
 import {
   PushPin,
   PushPinOutlined,
@@ -11,6 +11,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
 export function TitleBar() {
+  const theme = useTheme();
   const [isAlwaysOnTop, setIsAlwaysOnTop] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
 
@@ -93,7 +94,7 @@ export function TitleBar() {
             justifyContent: 'space-between',
             paddingLeft: 1,
             userSelect: 'none',
-            borderBottom: '1px solid #3c3c3c',
+            borderBottom: `1px solid ${theme.palette.divider}`,
           }}
         >
       <Box data-tauri-drag-region sx={{ flexGrow: 1, height: '100%' }} />
@@ -107,7 +108,7 @@ export function TitleBar() {
             height: 30,
             borderRadius: 0,
             '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.1)'
+              backgroundColor: theme.palette.action.hover
             },
           }}
         >
@@ -122,7 +123,7 @@ export function TitleBar() {
             height: 30,
             borderRadius: 0,
             '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.1)'
+              backgroundColor: theme.palette.action.hover
             },
           }}
         >
@@ -137,7 +138,7 @@ export function TitleBar() {
             height: 30,
             borderRadius: 0,
             '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.1)'
+              backgroundColor: theme.palette.action.hover
             },
           }}
         >

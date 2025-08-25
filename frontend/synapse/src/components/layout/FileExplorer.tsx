@@ -8,7 +8,8 @@ import {
   Paper,
   IconButton,
   Snackbar,
-  Alert
+  Alert,
+  useTheme
 } from '@mui/material';
 import { InsertDriveFile, Description } from '@mui/icons-material';
 import { RefreshCcw, Import } from 'lucide-react';
@@ -37,6 +38,7 @@ export function FileExplorer({
   loading,
   onTrackSelect,
 }: FileExplorerProps) {
+  const theme = useTheme();
   const subtitleTracks = useDataStore((state) => state.subtitleTracks);
   const setSubtitles = useDataStore((state) => state.setSubtitles);
   const importedSubtitleFiles = useDataStore((state) => state.importedSubtitleFiles);
@@ -69,7 +71,7 @@ export function FileExplorer({
           }}
         >
       <Box sx={{ p: 1.5, borderBottom: '1px solid #3c3c3c', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h6" sx={{ color: '#cccccc' }}>
+        <Typography variant="subtitle1" sx={{ color: '#cccccc', fontWeight: 500 }}>
           字幕源
         </Typography>
         <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -113,14 +115,14 @@ export function FileExplorer({
                   paddingLeft: `16px`,
                   paddingY: 0.25,
                   minHeight: 28,
-                  color: '#cccccc',
+                  color: theme.palette.text.primary,
                   '&:hover': {
-                    backgroundColor: '#37373d',
+                    backgroundColor: theme.palette.action.hover,
                   },
                   '&.Mui-selected': {
-                    backgroundColor: '#37373d',
+                    backgroundColor: theme.palette.action.selected,
                     '&:hover': {
-                      backgroundColor: '#37373d',
+                      backgroundColor: theme.palette.action.selected,
                     },
                   },
                 }}
@@ -158,14 +160,14 @@ export function FileExplorer({
                   paddingLeft: `16px`,
                   paddingY: 0.25,
                   minHeight: 28,
-                  color: '#cccccc',
+                  color: theme.palette.text.primary,
                   '&:hover': {
-                    backgroundColor: '#37373d',
+                    backgroundColor: theme.palette.action.hover,
                   },
                   '&.Mui-selected': {
-                    backgroundColor: '#37373d',
+                    backgroundColor: theme.palette.action.selected,
                     '&:hover': {
-                      backgroundColor: '#37373d',
+                      backgroundColor: theme.palette.action.selected,
                     },
                   },
                 }}

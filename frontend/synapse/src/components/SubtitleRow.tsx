@@ -34,8 +34,8 @@ const SubtitleRow: React.FC<SubtitleRowProps> = ({
       onDoubleClick={handleRowDoubleClick}
       sx={{
         display: 'flex',
-        alignItems: 'center',
-        height: '50px',
+        alignItems: 'center', // 改为居中对齐
+        minHeight: '36px', // 使用minHeight而不是固定高度，允许行高根据内容扩展
         borderBottom: 1,
         borderColor: 'divider',
         cursor: 'pointer',
@@ -50,13 +50,13 @@ const SubtitleRow: React.FC<SubtitleRowProps> = ({
         }),
       }}
     >
-      <Box component="div" sx={{ ...idCellStyle, textAlign: 'center' }}>
+      <Box component="div" sx={{ ...idCellStyle, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {row.id}
       </Box>
-      <Box component="div" sx={{ ...timecodeCellStyle, textAlign: 'center' }}>
+      <Box component="div" sx={{ ...timecodeCellStyle, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {row.startTimecode}
       </Box>
-      <Box component="div" sx={{ ...timecodeCellStyle, textAlign: 'center' }}>
+      <Box component="div" sx={{ ...timecodeCellStyle, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {row.endTimecode}
       </Box>
       <EditableSubtitleCell

@@ -27,7 +27,10 @@ interface DiffHighlighterProps {
 
 const DiffHighlighter: React.FC<DiffHighlighterProps> = ({ diffs }) => {
   return (
-    <p>
+    <p 
+      data-testid="diff-highlighter"
+      style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+    >
       {diffs.map((part, index) => {
         switch (part.type) {
           case 'added':

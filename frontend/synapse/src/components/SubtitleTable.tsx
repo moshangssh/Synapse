@@ -118,11 +118,11 @@ const SubtitleTable: React.FC<SubtitleTableProps> = ({ jumpToSubtitleId, onRowCl
     <ThemeProvider theme={themeMode === 'dark' ? darkTheme : lightTheme}>
       <CssBaseline />
       <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: 'background.default', color: 'text.primary' }}>
-        <Box sx={{ display: 'flex', flexShrink: 0, borderBottom: 1, borderColor: 'divider' }}>
-          <Box sx={{ ...idCellStyle, textAlign: 'center', py: 1 }}>序号</Box>
-          <Box sx={{ ...timecodeCellStyle, textAlign: 'center', py: 1 }}>起始时间码</Box>
-          <Box sx={{ ...timecodeCellStyle, textAlign: 'center', py: 1 }}>结束时间码</Box>
-          <Box sx={{ ...textCellStyle, py: 1, pl: 2 }}>字幕内容</Box>
+        <Box sx={{ display: 'flex', flexShrink: 0, borderBottom: 1, borderColor: 'divider', minHeight: '36px' }}>
+          <Box sx={{ ...idCellStyle, textAlign: 'center', py: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>序号</Box>
+          <Box sx={{ ...timecodeCellStyle, textAlign: 'center', py: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>起始时间码</Box>
+          <Box sx={{ ...timecodeCellStyle, textAlign: 'center', py: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>结束时间码</Box>
+          <Box sx={{ ...textCellStyle, py: 1, pl: 2, display: 'flex', alignItems: 'center' }}>字幕内容</Box>
         </Box>
 
         <Box sx={{ flex: 1, ...scrollbarStyle, position: 'relative' }}>
