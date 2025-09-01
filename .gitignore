@@ -32,8 +32,6 @@ UI/
 frontend/synapse/.env
 
 youhua
-.bmad-core/
-agents/
 expansion-packs/
 teams/
 .roomdes
