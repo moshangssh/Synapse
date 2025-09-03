@@ -1,5 +1,4 @@
 import { SrtSubtitleEntry, Subtitle } from '../types';
-import { calculateDiff } from './diff';
 
 /**
  * 将 SRT 字幕条目转换为标准字幕格式
@@ -13,6 +12,6 @@ export const convertSrtToSubtitles = (srtEntries: SrtSubtitleEntry[]): Subtitle[
     endTimecode: entry.endTimecode,
     text: entry.text,
     originalText: entry.text,
-    diffs: calculateDiff(entry.text, entry.text),
+    diffs: [{ type: 'normal' as const, value: entry.text }], // 相同文本的简单差异
   }));
 };

@@ -1,71 +1,121 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button, Checkbox, FormControlLabel, Box, Typography } from '@mui/material';
 import { Trash2 } from 'lucide-react';
 import { useDataStore } from '../stores/useDataStore';
 import { useSettingsStore } from '../stores/useSettingsStore';
 import useNotifier from '../hooks/useNotifier';
-import { calculateDiff } from '../utils/diff';
-
-// 转义正则表达式特殊字符
-function escapeRegExp(string: string) {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& 表示匹配到的子字符串
-}
+import { calculateDiffApi } from '../integration/diffApi';
 
 export function FillerWordRemover() {
   const { subtitles, setSubtitles } = useDataStore();
   const { fillerWords, loadFillerWords } = useSettingsStore();
   const notify = useNotifier();
   const [removePunctuation, setRemovePunctuation] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
+  // 组件挂载时加载口水词列表
   useEffect(() => {
-    // Load filler words when the component mounts
-    if (fillerWords.length === 0) {
-      loadFillerWords();
-    }
-  }, [loadFillerWords, fillerWords.length]);
+    loadFillerWords();
+  }, [loadFillerWords]);
 
-  const handleRemoveFillerWords = () => {
+  const handleRemoveFillerWords = async () => {
     if (fillerWords.length === 0) {
       notify.warning('口水词列表为空，无法执行操作。');
       return;
     }
 
+    if (subtitles.length === 0) {
+      notify.warning('字幕列表为空，无法执行操作。');
+      return;
+    }
+
+    setIsProcessing(true);
+
     try {
-      // For Chinese, word boundaries \b are not effective.
-      // We will match the words directly.
-      // 对每个口水词进行转义以防止正则表达式注入
-      const escapedWords = fillerWords.map(escapeRegExp);
-      const fillerWordsRegex = new RegExp(escapedWords.join('|'), 'g');
-      
-      let changesMade = false;
-      const updatedSubtitles = subtitles.map(subtitle => {
-        // Replace filler words with an empty string and remove consecutive spaces that might result
-        let cleanedText = subtitle.text.replace(fillerWordsRegex, '').replace(/\s+/g, ' ').trim();
-        
-        // 只有当用户选择移除标点符号时才执行此操作
-        if (removePunctuation) {
-          // Replace all punctuation marks except book title marks《》and double quotes"" with spaces
-          // This regex matches all punctuation except Chinese book title marks《》and double quotes""
-          cleanedText = cleanedText.replace(/[^\w\s\u4e00-\u9fff《》"]/g, ' ').replace(/\s+/g, ' ').trim();
-        }
-        
-        if (cleanedText !== subtitle.text) {
-          changesMade = true;
-          const newDiffs = calculateDiff(subtitle.originalText, cleanedText);
-          return { ...subtitle, text: cleanedText, diffs: newDiffs };
-        }
-        return subtitle;
+      // 准备API请求的数据
+      const requestData = {
+        subtitles: subtitles.map(subtitle => ({
+          id: subtitle.id,
+          startTimecode: subtitle.startTimecode,
+          endTimecode: subtitle.endTimecode,
+          text: subtitle.text
+        })),
+        removePunctuation: removePunctuation
+      };
+
+      // 调用后端API
+      const response = await fetch('http://localhost:8000/api/v1/subtitles/remove-filler-words', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
       });
 
-      if (changesMade) {
-        const originalSubtitles = [...subtitles]; // 创建一个副本用于撤销
+      const data = await response.json();
+
+      if (!response.ok) {
+        // 处理API错误响应
+        const errorDetail = data.detail || {};
+        const errorMessage = errorDetail.message || '移除口水词时发生错误';
+        notify.error(errorMessage);
+        return;
+      }
+
+      // 处理成功的响应
+      const processedSubtitles = data.data;
+      
+      // 检查是否有变化
+      const hasChanges = processedSubtitles.some((processedSubtitle: any, index: number) => 
+        processedSubtitle.text !== subtitles[index].text
+      );
+
+      if (hasChanges) {
+        // 创建原始副本用于撤销
+        const originalSubtitles = [...subtitles];
+        
+        // 转换处理后的字幕数据并更新状态，先使用占位符差异
+        const updatedSubtitles = subtitles.map((subtitle, index) => ({
+          ...subtitle,
+          text: processedSubtitles[index].text,
+          // 使用占位符差异
+          diffs: [{ type: 'normal' as const, value: processedSubtitles[index].text }],
+          // 标记为已修改
+          isModified: processedSubtitles[index].text !== subtitle.originalText
+        }));
+
         setSubtitles(updatedSubtitles);
+        
+        // 异步计算所有修改字幕的差异
+        const updateAllDiffs = async () => {
+          for (let index = 0; index < updatedSubtitles.length; index++) {
+            const subtitle = updatedSubtitles[index];
+            if (subtitle.text === subtitles[index].text) continue; // 跳过未修改的字幕
+
+            try {
+              const diffs = await calculateDiffApi(subtitle.originalText, subtitle.text);
+              
+              // 更新单个字幕的差异数据
+              setSubtitles((currentSubtitles: any[]) => 
+                currentSubtitles.map((s: any) => 
+                  s.id === subtitle.id 
+                    ? { ...s, diffs }
+                    : s
+                )
+              );
+            } catch (error) {
+              console.error(`计算字幕 ${subtitle.id} 的差异失败:`, error);
+              // 保持占位符差异
+            }
+          }
+        };
+
+        updateAllDiffs();
+        
         notify.success('已成功移除所有口水词！', {
           action: () => (
             <Button color="inherit" size="small" onClick={() => {
               setSubtitles(originalSubtitles);
-              // 可选：在撤销后关闭 snackbar
-              // closeSnackbar(key);
             }}>
               撤销
             </Button>
@@ -77,6 +127,8 @@ export function FillerWordRemover() {
     } catch (error) {
       console.error('Failed to remove filler words:', error);
       notify.error('移除失败，请检查控制台获取更多信息。');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -103,11 +155,11 @@ export function FillerWordRemover() {
         variant="contained"
         startIcon={<Trash2 size={14} />}
         onClick={handleRemoveFillerWords}
-        disabled={fillerWords.length === 0 || subtitles.length === 0}
+        disabled={fillerWords.length === 0 || subtitles.length === 0 || isProcessing}
         size="small"
         sx={{ mt: 0.5 }}
       >
-        一键去口水词
+        {isProcessing ? '处理中...' : '一键去口水词'}
       </Button>
     </Box>
   );

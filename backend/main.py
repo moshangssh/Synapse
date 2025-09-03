@@ -4,6 +4,8 @@ from typing import List, Union
 
 from davinci_api import get_resolve_subtitles, set_resolve_timecode, export_to_davinci, get_resolve_project_info, get_subtitle_tracks
 from srt_utils import generate_srt_content
+from srt_parser import parse_srt_file, validate_srt_content
+from text_utils import process_subtitles_for_filler_words, replace_text_in_subtitles, calculate_text_diff
 from exceptions import ResolveError, ResolveConnectionError, NoProjectOpenError, NoActiveTimelineError
 from schemas import (
     SubtitleItem,
@@ -14,6 +16,14 @@ from schemas import (
     SubtitleTrackInfo,
     SubtitleTrackListResponse,
     ResolveErrorCode,
+    SrtImportRequest,
+    SrtImportResponse,
+    RemoveFillerWordsRequest,
+    RemoveFillerWordsResponse,
+    ReplaceAllRequest,
+    ReplaceAllResponse,
+    DiffRequest,
+    DiffResponse,
 )
 
 # 在 ErrorResponse 中更新 code 字段的类型
@@ -151,3 +161,158 @@ def export_subtitles_to_davinci(request: SubtitleExportRequest):
         raise HTTPException(status_code=500, detail={"status": "error", "message": str(e)})
     except Exception as e:
         raise HTTPException(status_code=500, detail={"status": "error", "message": f"An unexpected error occurred: {e}"})
+
+
+@app.post("/api/v1/import/srt", 
+          response_model=Union[SrtImportResponse, ErrorResponse], 
+          tags=["Import"], 
+          summary="导入SRT文件并解析为字幕数据")
+def import_srt_file(request: SrtImportRequest):
+    """
+    导入SRT文件内容并解析为字幕数据
+    接收SRT文件内容字符串，验证并解析后返回字幕数据
+    """
+    try:
+        # 检查内容大小限制（10MB）
+        max_size = 10 * 1024 * 1024  # 10MB
+        if len(request.content.encode('utf-8')) > max_size:
+            raise HTTPException(
+                status_code=413, 
+                detail={"status": "error", "message": "文件内容过大，最大支持10MB", "code": "file_too_large"}
+            )
+        
+        # 验证SRT文件内容（使用非严格模式，允许跳过无效块）
+        validation_result = validate_srt_content(request.content, strict=False)
+        if not validation_result["isValid"]:
+            raise HTTPException(
+                status_code=400, 
+                detail={
+                    "status": "error", 
+                    "message": f"SRT文件格式错误: {'; '.join(validation_result['errors'])}", 
+                    "code": "invalid_srt_format"
+                }
+            )
+        
+        # 解析SRT文件
+        parsed_file = parse_srt_file(request.content, request.fileName)
+        
+        # 返回解析结果
+        return {
+            "status": "success",
+            "data": parsed_file.to_dict()
+        }
+        
+    except HTTPException:
+        # 重新抛出HTTP异常
+        raise
+    except Exception as e:
+        # 处理其他异常
+        raise HTTPException(
+            status_code=500, 
+            detail={"status": "error", "message": f"解析SRT文件时发生错误: {str(e)}", "code": "parse_error"}
+        )
+
+
+@app.post("/api/v1/subtitles/remove-filler-words",
+          response_model=Union[RemoveFillerWordsResponse, ErrorResponse],
+          tags=["Subtitles"],
+          summary="移除字幕中的口水词")
+def remove_filler_words(request: RemoveFillerWordsRequest):
+    """
+    移除字幕中的口水词，可选择是否移除标点符号（保留配置文件中指定的标点符号）
+    """
+    try:
+        # 处理字幕，移除口水词
+        processed_subtitles = process_subtitles_for_filler_words(
+            request.subtitles, 
+            request.removePunctuation
+        )
+        
+        return {
+            "status": "success",
+            "data": processed_subtitles
+        }
+        
+    except Exception as e:
+        # 处理其他异常
+        raise HTTPException(
+            status_code=500, 
+            detail={"status": "error", "message": f"处理口水词时发生错误: {str(e)}", "code": "filler_words_processing_error"}
+        )
+
+
+@app.post("/api/v1/subtitles/replace-all",
+          response_model=Union[ReplaceAllResponse, ErrorResponse],
+          tags=["Subtitles"],
+          summary="在字幕中执行查找替换操作")
+def replace_all_in_subtitles(request: ReplaceAllRequest):
+    """
+    在字幕中执行全局查找替换操作，不区分大小写
+    """
+    try:
+        # 执行查找替换操作
+        modified_subtitles = replace_text_in_subtitles(
+            request.subtitles,
+            request.searchQuery,
+            request.replaceQuery
+        )
+        
+        return {
+            "status": "success",
+            "data": modified_subtitles
+        }
+        
+    except ValueError as e:
+        # 处理验证错误（如空的搜索查询）
+        raise HTTPException(
+            status_code=400,
+            detail={"status": "error", "message": str(e), "code": "invalid_search_query"}
+        )
+    except Exception as e:
+        # 处理其他异常
+        raise HTTPException(
+            status_code=500,
+            detail={"status": "error", "message": f"执行查找替换时发生错误: {str(e)}", "code": "replace_processing_error"}
+        )
+
+
+@app.post("/api/v1/utils/diff",
+          response_model=Union[DiffResponse, ErrorResponse],
+          tags=["Utils"],
+          summary="计算两个文本之间的差异")
+def calculate_diff(request: DiffRequest):
+    """
+    计算两个文本之间的差异，返回结构化的差异数据
+    """
+    try:
+        # 验证输入参数
+        if not isinstance(request.original_text, str) or not isinstance(request.new_text, str):
+            raise ValueError("original_text 和 new_text 必须是字符串")
+        
+        # 计算文本差异
+        diff_result = calculate_text_diff(
+            request.original_text,
+            request.new_text
+        )
+        
+        # 验证结果
+        if not isinstance(diff_result, list):
+            raise ValueError("diff计算结果必须是列表")
+        
+        return {
+            "status": "success",
+            "data": diff_result
+        }
+        
+    except ValueError as e:
+        # 处理验证错误
+        raise HTTPException(
+            status_code=400,
+            detail={"status": "error", "message": f"参数验证失败: {str(e)}", "code": "validation_error"}
+        )
+    except Exception as e:
+        # 处理其他异常
+        raise HTTPException(
+            status_code=500,
+            detail={"status": "error", "message": f"计算文本差异时发生错误: {str(e)}", "code": "diff_calculation_error"}
+        )

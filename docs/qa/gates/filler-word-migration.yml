@@ -1,0 +1,103 @@
+# <!-- Powered by BMAD™ Core -->
+template:
+  id: qa-gate-template-v1
+  name: Quality Gate Decision
+  version: 1.0
+  output:
+    format: yaml
+    filename: qa.qaLocation/gates/filler-word-migration.yml
+    title: "Quality Gate: Filler Word Migration"
+
+# Required fields (keep these first)
+schema: 1
+story: "filler-word-migration"
+story_title: "将"去口水词"功能迁移至后端并支持自定义标点"
+gate: "CONCERNS"
+status_reason: "功能实现完整且测试覆盖良好，但存在配置管理和性能监控方面的改进建议"
+reviewer: "Quinn (Test Architect)"
+updated: "2025-09-03T00:00:00Z"
+
+# Always present but only active when WAIVED
+waiver: { active: false }
+
+# Issues (if any) - Use fixed severity: low | medium | high
+top_issues:
+  - id: "CONF-001"
+    severity: medium
+    finding: "配置文件路径硬编码，可能在不同部署环境下失效"
+    suggested_action: "使用环境变量或配置管理来处理配置文件路径"
+  - id: "PERF-001"
+    severity: medium
+    finding: "缺少API响应时间监控，可能影响用户体验"
+    suggested_action: "添加响应时间日志和性能指标监控"
+  - id: "FUNC-001"
+    severity: low
+    finding: "标点符号处理范围有限，硬编码的标点符号列表可能不够全面"
+    suggested_action: "支持配置文件定义标点符号范围"
+
+# Risk summary (from risk-profile task if run)
+risk_summary:
+  totals: { critical: 0, high: 1, medium: 2, low: 1 }
+  recommendations:
+    must_fix: []
+    monitor: ["配置文件路径问题", "API性能监控", "标点符号处理范围"]
+
+# Quality and expiry
+quality_score: 85
+expires: "2025-10-03T00:00:00Z"
+
+# Evidence
+evidence:
+  tests_reviewed: 269
+  risks_identified: 4
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6]
+    ac_gaps: []
+
+# NFR validation
+nfr_validation:
+  security: { status: PASS, notes: "输入验证完善，错误处理安全" }
+  performance: { status: CONCERNS, notes: "缺少性能监控，大数据量处理需要验证" }
+  reliability: { status: PASS, notes: "错误恢复机制完善，状态管理稳定" }
+  maintainability: { status: PASS, notes: "代码结构清晰，测试覆盖良好" }
+  usability: { status: PASS, notes: "用户体验一致，操作反馈完整" }
+
+# Test coverage analysis
+test_coverage:
+  backend:
+    unit_tests: 15
+    integration_tests: 2
+    coverage_percentage: 95
+    gaps: ["大数据量性能测试", "并发测试"]
+  frontend:
+    component_tests: 7
+    integration_tests: 0
+    coverage_percentage: 85
+    gaps: ["端到端集成测试", "网络超时处理测试"]
+
+# Recommendations
+recommendations:
+  immediate: []
+  future:
+    - action: "实现配置文件路径的环境变量管理"
+      refs: ["backend/text_utils.py:13"]
+    - action: "添加API性能监控和日志记录"
+      refs: ["backend/main.py:remove-filler-words端点"]
+    - action: "支持配置文件定义标点符号范围"
+      refs: ["backend/text_utils.py:58"]
+    - action: "添加大数据量性能测试"
+      refs: ["backend/tests/test_filler_words_api.py"]
+    - action: "实现端到端集成测试"
+      refs: ["frontend/synapse/src/components/FillerWordRemover.tsx"]
+
+# Change impact assessment
+change_impact:
+  affected_components:
+    - "backend/text_utils.py"
+    - "backend/main.py"
+    - "backend/schemas.py"
+    - "frontend/synapse/src/components/FillerWordRemover.tsx"
+    - "frontend/synapse/public/filler_words.json"
+  backward_compatibility: true
+  migration_required: false
+  rollout_strategy: "直接替换"

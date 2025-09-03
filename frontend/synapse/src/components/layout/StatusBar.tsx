@@ -21,6 +21,7 @@ export function StatusBar() {
     connecting: { label: '连接中...', color: 'warning', iconColor: '#fde047' },
     error: { label: `错误: ${errorMessage}`, color: 'error', iconColor: '#f87171' },
     disconnected: { label: '等待连接...', color: 'default', iconColor: '#9ca3af' },
+    standalone: { label: '独立模式', color: 'info', iconColor: '#60a5fa' },
   } as const;
 
   const { label, iconColor } = statusConfig[connectionStatus];

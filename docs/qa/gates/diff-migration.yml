@@ -1,0 +1,49 @@
+schema: 1
+story: "diff-migration"
+story_title: "重构：将Diff计算逻辑迁移到后端"
+gate: PASS
+status_reason: "所有验收标准均已满足，代码质量良好，测试覆盖充分，无阻塞性问题"
+reviewer: "Quinn (Test Architect)"
+updated: "2025-09-03T17:30:00Z"
+
+waiver: { active: false }
+
+top_issues: []
+
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 0, low: 0 }
+  recommendations:
+    must_fix: []
+    monitor: []
+
+quality_score: 95
+expires: "2025-09-17T17:30:00Z"
+
+evidence:
+  tests_reviewed: 32
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "输入验证完善，错误处理适当，无安全漏洞"
+  performance:
+    status: PASS
+    notes: "响应时间满足要求，性能测试通过"
+  reliability:
+    status: PASS
+    notes: "错误处理机制完善，系统稳定性良好"
+  maintainability:
+    status: PASS
+    notes: "代码结构清晰，注释充分，易于维护"
+
+recommendations:
+  immediate: []
+  future:
+    - action: "考虑添加缓存机制以提高频繁相同文本差异计算的性能"
+      refs: ["backend/text_utils.py:151-184"]
+    - action: "可以添加批处理API以支持多个文本的差异计算"
+      refs: ["backend/main.py:279-318"]

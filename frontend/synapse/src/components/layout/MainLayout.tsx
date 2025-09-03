@@ -37,6 +37,8 @@ export function MainLayout() {
     setErrorMessage,
     setProjectInfo,
     setSubtitleTracks,
+    setCurrentSubtitleSource,
+    setCurrentImportedFileName,
     subtitles,
     errorMessage: currentErrorMessage,
   } = useDataStore();
@@ -163,7 +165,9 @@ export function MainLayout() {
 
   const handleTrackSelect = useCallback((trackIndex: number) => {
     setActiveTrackIndex(trackIndex);
-  }, []);
+    setCurrentSubtitleSource('davinci');
+    setCurrentImportedFileName(null);
+  }, [setCurrentSubtitleSource, setCurrentImportedFileName]);
 
   const handleResultClick = (subtitle: Subtitle) => {
     setJumpToSubtitleId(subtitle.id);

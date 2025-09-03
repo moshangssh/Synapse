@@ -1,0 +1,56 @@
+# BMAD Core Configuration
+project:
+  name: "Synapse"
+  description: "DaVinci Resolve 字幕增强工具"
+  version: "1.0.0"
+  type: "desktop-application"
+
+# Process Configuration
+process:
+  story_validation:
+    template: "story-tmpl.yaml"
+    checklist: "po-master-checklist.md"
+    acceptance_criteria:
+      required_fields:
+        - "title"
+        - "description"
+        - "acceptance_criteria"
+        - "priority"
+        - "estimate"
+      validation_rules:
+        - "title_must_be_actionable"
+        - "criteria_must_be_testable"
+        - "estimate_must_be_realistic"
+
+# Quality Gates
+quality:
+  minimum_story_points: 1
+  maximum_story_points: 8
+  required_sections:
+    - "user_story"
+    - "acceptance_criteria"
+    - "definition_of_done"
+  forbidden_terms:
+    - "简单的"
+    - "大概"
+    - "可能"
+    - "应该"
+
+# Output Configuration
+output:
+  story_format: "yaml"
+  destination: "docs/backlog/"
+  naming_convention: "story-{id}-{title}.yaml"
+  
+# Dependencies
+dependencies:
+  templates:
+    - "story-tmpl.yaml"
+  tasks:
+    - "validate-next-story.md"
+    - "correct-course.md"
+    - "execute-checklist.md"
+    - "shard-doc.md"
+  checklists:
+    - "po-master-checklist.md"
+    - "change-checklist.md"

@@ -7,14 +7,13 @@ import {
   ListItemText,
   Paper,
   IconButton,
-  Snackbar,
-  Alert,
   useTheme
 } from '@mui/material';
 import { InsertDriveFile, Description } from '@mui/icons-material';
 import { RefreshCcw, Import } from 'lucide-react';
 import { useDataStore } from '../../stores/useDataStore';
 import { useSrtImporter } from '../../hooks/useSrtImporter';
+import { useUIStore } from '../../stores/useUIStore';
 import { useState } from 'react';
 import { Subtitle } from '../../types';
 import { convertSrtToSubtitles } from '../../utils/converter';
@@ -42,6 +41,9 @@ export function FileExplorer({
   const subtitleTracks = useDataStore((state) => state.subtitleTracks);
   const setSubtitles = useDataStore((state) => state.setSubtitles);
   const importedSubtitleFiles = useDataStore((state) => state.importedSubtitleFiles);
+  const setCurrentSubtitleSource = useDataStore((state) => state.setCurrentSubtitleSource);
+  const setCurrentImportedFileName = useDataStore((state) => state.setCurrentImportedFileName);
+  const setActiveTrackIndex = useUIStore((state) => state.setActiveTrackIndex);
   const [selection, setSelection] = useState<SelectionState>({ type: null, id: 0 });
   
   // 判断是否选中的逻辑
@@ -55,10 +57,6 @@ export function FileExplorer({
     isImporting,
     triggerFileSelect,
     fileInputRef,
-    snackbarOpen,
-    snackbarMessage,
-    snackbarSeverity,
-    handleSnackbarClose,
   } = useSrtImporter();
 
   return (
@@ -108,6 +106,9 @@ export function FileExplorer({
                   // 当点击导入的文件时，将其字幕数据设置为当前显示的字幕
                   const convertedSubtitles: Subtitle[] = convertSrtToSubtitles(file.subtitles);
                   setSubtitles(convertedSubtitles);
+                  setCurrentSubtitleSource('imported');
+                  setCurrentImportedFileName(file.fileName);
+                  setActiveTrackIndex(null); // 清空活动轨道索引
                   setSelection({ type: 'importedFile', id: file.fileName });
                 }}
                 selected={isSelected('importedFile', file.fileName)}
@@ -196,23 +197,6 @@ export function FileExplorer({
           </Typography>
         </Box>
       )}
-      
-      {/* 导入结果提示 */}
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={6000}
-        onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert
-          onClose={handleSnackbarClose}
-          severity={snackbarSeverity}
-          variant="filled"
-          sx={{ width: '100%' }}
-        >
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
     </Paper>
   );
 }

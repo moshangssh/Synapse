@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { useDataStore } from '../stores/useDataStore';
-import { parseSRTFile, validateSRTContent } from '../utils/srtParser';
 import { convertSrtToSubtitles } from '../utils/converter';
+import useNotifier from './useNotifier';
 
 /**
  * 自定义Hook，用于封装SRT文件导入逻辑
@@ -10,15 +10,14 @@ import { convertSrtToSubtitles } from '../utils/converter';
 export const useSrtImporter = () => {
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // 从状态管理中获取所需的函数
   const setSubtitles = useDataStore((state) => state.setSubtitles);
   const addImportedSubtitleFile = useDataStore((state) => state.addImportedSubtitleFile);
+  const setConnectionStatus = useDataStore((state) => state.setConnectionStatus);
+  const notify = useNotifier();
 
   /**
    * 处理文件导入的函数
@@ -36,45 +35,58 @@ export const useSrtImporter = () => {
       if (!file.name.toLowerCase().endsWith('.srt')) {
         const errorMessage = '请选择SRT格式的文件';
         setImportError(errorMessage);
-        setSnackbarMessage(errorMessage);
-        setSnackbarSeverity('error');
-        setSnackbarOpen(true);
+        notify.error(errorMessage);
         return;
       }
 
       const content = await file.text();
       
-      // 验证SRT文件内容
-      const validation = validateSRTContent(content);
-      if (!validation.isValid) {
-        const errorMessage = `SRT文件格式错误: ${validation.errors.join(', ')}`;
+      // 调用后端API进行SRT文件解析
+      const response = await fetch('http://localhost:8000/api/v1/import/srt', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: content,
+          fileName: file.name,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // 处理API错误响应
+        const errorDetail = data.detail || {};
+        const errorMessage = errorDetail.message || '导入SRT文件时发生错误';
         setImportError(errorMessage);
-        setSnackbarMessage(errorMessage);
-        setSnackbarSeverity('error');
-        setSnackbarOpen(true);
+        notify.error(errorMessage);
         return;
       }
 
-      // 解析SRT文件
-      const parsedFile = parseSRTFile(content, file.name);
+      // 处理成功的响应
+      const importedFile = data.data;
       
       // 将解析后的数据添加到状态管理中
-      addImportedSubtitleFile(parsedFile);
+      addImportedSubtitleFile({
+        fileName: importedFile.fileName,
+        subtitles: importedFile.subtitles,
+        metadata: importedFile.metadata,
+      });
       
       // 将SRT字幕条目转换为Subtitle格式并设置到状态中
-      const convertedSubtitles = convertSrtToSubtitles(parsedFile.subtitles);
+      const convertedSubtitles = convertSrtToSubtitles(importedFile.subtitles);
       setSubtitles(convertedSubtitles);
       
-      setSnackbarMessage(`成功导入 ${parsedFile.subtitles.length} 条字幕`);
-      setSnackbarSeverity('success');
-      setSnackbarOpen(true);
+      // 自动切换到独立模式
+      setConnectionStatus('standalone');
+      
+      notify.success(`成功导入 ${importedFile.subtitles.length} 条字幕`);
     } catch (error) {
       console.error('导入SRT文件时发生错误:', error);
       const errorMessage = '导入SRT文件时发生错误';
       setImportError(errorMessage);
-      setSnackbarMessage(errorMessage);
-      setSnackbarSeverity('error');
-      setSnackbarOpen(true);
+      notify.error(errorMessage);
     } finally {
       setIsImporting(false);
       
@@ -83,7 +95,7 @@ export const useSrtImporter = () => {
         fileInputRef.current.value = '';
       }
     }
-  }, [setSubtitles, addImportedSubtitleFile]);
+  }, [setSubtitles, addImportedSubtitleFile, setConnectionStatus, notify]);
 
   /**
    * 触发文件选择对话框
@@ -92,13 +104,6 @@ export const useSrtImporter = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
-  }, []);
-
-  /**
-   * 关闭提示消息
-   */
-  const handleSnackbarClose = useCallback(() => {
-    setSnackbarOpen(false);
   }, []);
 
   /**
@@ -115,9 +120,5 @@ export const useSrtImporter = () => {
     clearError,
     triggerFileSelect,
     fileInputRef,
-    snackbarOpen,
-    snackbarMessage,
-    snackbarSeverity,
-    handleSnackbarClose,
   };
 };
