@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>测试替换功能</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+        .error {
+            color: red;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+        .success {
+            color: green;
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>测试替换功能</h1>
+        
+        <div class="input-group">
+            <label for="searchQuery">搜索文本:</label>
+            <input type="text" id="searchQuery" value="World">
+        </div>
+        
+        <div class="input-group">
+            <label for="replaceQuery">替换文本:</label>
+            <input type="text" id="replaceQuery" value="Earth">
+        </div>
+        
+        <div class="input-group">
+            <label for="subtitles">字幕数据 (JSON格式):</label>
+            <textarea id="subtitles" rows="10">[
+  {
+    "id": 1,
+    "startTimecode": "00:00:01:00",
+    "endTimecode": "00:00:03:00",
+    "text": "Hello World Test"
+  },
+  {
+    "id": 2,
+    "startTimecode": "00:00:03:00",
+    "endTimecode": "00:00:05:00",
+    "text": "Goodbye World Test"
+  }
+]</textarea>
+        </div>
+        
+        <button id="testBtn">测试替换</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            const searchQuery = document.getElementById('searchQuery').value;
+            const replaceQuery = document.getElementById('replaceQuery').value;
+            const subtitles = JSON.parse(document.getElementById('subtitles').value);
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = '';
+            resultDiv.textContent = '正在处理...';
+            
+            try {
+                const response = await fetch('http://localhost:8000/api/v1/subtitles/replace-all', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        subtitles: subtitles,
+                        searchQuery: searchQuery,
+                        replaceQuery: replaceQuery
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                resultDiv.className = 'success';
+                resultDiv.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                resultDiv.className = 'error';
+                resultDiv.textContent = `错误: ${error.message}`;
+            }
+        });
+    </script>
+</body>
+</html>

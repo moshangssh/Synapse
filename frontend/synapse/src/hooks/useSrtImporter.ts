@@ -1,7 +1,10 @@
 import { useState, useCallback, useRef } from 'react';
-import { useDataStore } from '../stores/useDataStore';
+import { useSubtitleStore } from '../stores/useSubtitleStore';
+import { useProjectStore } from '../stores/useProjectStore';
+import { useConnectionStore } from '../stores/useConnectionStore';
 import { convertSrtToSubtitles } from '../utils/converter';
 import useNotifier from './useNotifier';
+import { importSrtFile } from '../services/importService';
 
 /**
  * 自定义Hook，用于封装SRT文件导入逻辑
@@ -14,9 +17,9 @@ export const useSrtImporter = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // 从状态管理中获取所需的函数
-  const setSubtitles = useDataStore((state) => state.setSubtitles);
-  const addImportedSubtitleFile = useDataStore((state) => state.addImportedSubtitleFile);
-  const setConnectionStatus = useDataStore((state) => state.setConnectionStatus);
+  const setSubtitles = useSubtitleStore((state) => state.setSubtitles);
+  const addImportedSubtitleFile = useProjectStore((state) => state.addImportedSubtitleFile);
+  const setConnectionStatus = useConnectionStore((state) => state.setConnectionStatus);
   const notify = useNotifier();
 
   /**
@@ -42,31 +45,9 @@ export const useSrtImporter = () => {
       const content = await file.text();
       
       // 调用后端API进行SRT文件解析
-      const response = await fetch('http://localhost:8000/api/v1/import/srt', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          content: content,
-          fileName: file.name,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        // 处理API错误响应
-        const errorDetail = data.detail || {};
-        const errorMessage = errorDetail.message || '导入SRT文件时发生错误';
-        setImportError(errorMessage);
-        notify.error(errorMessage);
-        return;
-      }
+      const importedFile = await importSrtFile(content, file.name);
 
       // 处理成功的响应
-      const importedFile = data.data;
-      
       // 将解析后的数据添加到状态管理中
       addImportedSubtitleFile({
         fileName: importedFile.fileName,

@@ -1,10 +1,14 @@
 import { renderHook, act } from '@testing-library/react';
 import { useSrtImporter } from '../useSrtImporter';
-import { useDataStore } from '../../stores/useDataStore';
+import { useSubtitleStore } from '../../stores/useSubtitleStore';
+import { useProjectStore } from '../../stores/useProjectStore';
+import { useConnectionStore } from '../../stores/useConnectionStore';
 import useNotifier from '../useNotifier';
 
 // Mock the dependencies
-vi.mock('../../stores/useDataStore');
+vi.mock('../../stores/useSubtitleStore');
+vi.mock('../../stores/useProjectStore');
+vi.mock('../../stores/useConnectionStore');
 vi.mock('../useNotifier');
 
 const mockSetSubtitles = vi.fn();
@@ -34,14 +38,24 @@ describe('useSrtImporter', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     
-    // Mock useDataStore
-    (useDataStore as any).mockImplementation((selector) => {
+    // Mock useSubtitleStore
+    (useSubtitleStore as any).mockImplementation((selector) => {
       if (selector.toString().includes('setSubtitles')) {
         return mockSetSubtitles;
       }
+      return vi.fn();
+    });
+    
+    // Mock useProjectStore
+    (useProjectStore as any).mockImplementation((selector) => {
       if (selector.toString().includes('addImportedSubtitleFile')) {
         return mockAddImportedSubtitleFile;
       }
+      return vi.fn();
+    });
+    
+    // Mock useConnectionStore
+    (useConnectionStore as any).mockImplementation((selector) => {
       if (selector.toString().includes('setConnectionStatus')) {
         return mockSetConnectionStatus;
       }

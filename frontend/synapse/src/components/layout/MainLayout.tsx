@@ -13,10 +13,13 @@ import SearchResults from '../SearchResults';
 import { useFindReplace } from '../../hooks/useFindReplace';
 import { Subtitle } from '../../types';
 import { useUIStore } from '../../stores/useUIStore';
-import { useDataStore } from '../../stores/useDataStore';
+import { useSubtitleStore } from '../../stores/useSubtitleStore';
+import { useProjectStore } from '../../stores/useProjectStore';
+import { useConnectionStore } from '../../stores/useConnectionStore';
 import useNotifier from '../../hooks/useNotifier';
 import { useExport } from '../../hooks/useExport';
 import { useSettingsStore } from '../../stores/useSettingsStore';
+import { fetchSubtitles as fetchSubtitlesService, fetchProjectInfo as fetchProjectInfoService, fetchSubtitleTracks as fetchSubtitleTracksService } from '../../services/resolveService';
 export function MainLayout() {
   const notify = useNotifier();
   const themeMode = useSettingsStore((state) => state.theme);
@@ -30,18 +33,18 @@ export function MainLayout() {
     setSelectedSubtitleId,
   } = useUIStore();
 
-  const {
-    setSubtitles,
-    setFrameRate,
-    setConnectionStatus,
-    setErrorMessage,
-    setProjectInfo,
-    setSubtitleTracks,
-    setCurrentSubtitleSource,
-    setCurrentImportedFileName,
-    subtitles,
-    errorMessage: currentErrorMessage,
-  } = useDataStore();
+  const setSubtitles = useSubtitleStore((state) => state.setSubtitles);
+  const subtitles = useSubtitleStore((state) => state.subtitles);
+  
+  const setFrameRate = useProjectStore((state) => state.setFrameRate);
+  const setProjectInfo = useProjectStore((state) => state.setProjectInfo);
+  const setSubtitleTracks = useProjectStore((state) => state.setSubtitleTracks);
+  const setCurrentSubtitleSource = useProjectStore((state) => state.setCurrentSubtitleSource);
+  const setCurrentImportedFileName = useProjectStore((state) => state.setCurrentImportedFileName);
+  
+  const setConnectionStatus = useConnectionStore((state) => state.setConnectionStatus);
+  const setErrorMessage = useConnectionStore((state) => state.setErrorMessage);
+  const currentErrorMessage = useConnectionStore((state) => state.errorMessage);
   const { exportToSrt, exportToDavinci } = useExport();
 
   const [loading, setLoading] = useState(false);
@@ -59,26 +62,11 @@ export function MainLayout() {
     setConnectionStatus("connecting");
     setErrorMessage(null);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/subtitles?track_index=${trackIndex}`, { signal });
-      const data = await response.json();
-
-      if (response.ok && data.status === "success") {
-        const subtitlesWithDiffs = data.data.map((sub: any) => ({
-          ...sub,
-          originalText: sub.text,
-          diffs: [{ type: "normal", value: sub.text }],
-        }));
-        setSubtitles(subtitlesWithDiffs);
-        setFrameRate(data.frameRate);
-        setConnectionStatus("connected");
-      } else {
-        const errorPayload = {
-          message: data.message || "获取字幕失败",
-          code: data.code,
-        };
-        setErrorMessage(errorPayload);
-        throw new Error(errorPayload.message);
-      }
+      const subtitlesWithDiffs = await fetchSubtitlesService(trackIndex);
+      setSubtitles(subtitlesWithDiffs);
+      // Note: setFrameRate needs to be called with the frame rate from the response
+      // This will be handled in the service layer in a future update
+      setConnectionStatus("connected");
     } catch (error: any) {
       if (error.name === 'AbortError') {
         console.log('Fetch aborted');
@@ -94,20 +82,12 @@ export function MainLayout() {
     } finally {
       setLoading(false);
     }
-  }, [setSubtitles, setFrameRate, setConnectionStatus, setErrorMessage]);
+  }, [setSubtitles, setConnectionStatus, setErrorMessage, currentErrorMessage]);
 
   const fetchProjectInfo = useCallback(async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/project-info`);
-      const result = await response.json();
-
-      if (response.ok && result.status === 'success') {
-        setProjectInfo(result.data);
-      } else {
-        // Don't throw an error, just log it, as this is non-critical info
-        console.error(result.message || '获取项目信息失败');
-        setProjectInfo({ projectName: 'N/A', timelineName: 'N/A' });
-      }
+      const projectInfo = await fetchProjectInfoService();
+      setProjectInfo(projectInfo);
     } catch (error) {
       console.error('Failed to fetch project info:', error);
       setProjectInfo({ projectName: 'N/A', timelineName: 'N/A' });
@@ -119,29 +99,19 @@ export function MainLayout() {
     setErrorMessage(null);
     setConnectionStatus("connecting");
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/timeline/subtitle_tracks`);
-      const data = await response.json();
-      if (response.ok && data.status === "success") {
-        setSubtitleTracks(data.data);
-        if (data.data.length > 0) {
-          const firstTrackIndex = data.data[0].track_index;
-          setActiveTrackIndex(firstTrackIndex);
-          // The useEffect hook will trigger fetchSubtitles when activeTrackIndex is set.
-          // We only need to fetch non-critical project info here.
-          await fetchProjectInfo();
-        } else {
-          // No tracks, but still connected
-          setConnectionStatus("connected");
-          setSubtitles([]);
-          setActiveTrackIndex(null);
-        }
+      const tracks = await fetchSubtitleTracksService();
+      setSubtitleTracks(tracks);
+      if (tracks.length > 0) {
+        const firstTrackIndex = tracks[0].track_index;
+        setActiveTrackIndex(firstTrackIndex);
+        // The useEffect hook will trigger fetchSubtitles when activeTrackIndex is set.
+        // We only need to fetch non-critical project info here.
+        await fetchProjectInfo();
       } else {
-        const errorPayload = {
-          message: data.message || "获取字幕轨道失败",
-          code: data.code,
-        };
-        setErrorMessage(errorPayload);
-        throw new Error(errorPayload.message);
+        // No tracks, but still connected
+        setConnectionStatus("connected");
+        setSubtitles([]);
+        setActiveTrackIndex(null);
       }
     } catch (error: any) {
       if (!currentErrorMessage) {

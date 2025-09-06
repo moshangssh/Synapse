@@ -1,9 +1,11 @@
 import { renderHook, act } from '@testing-library/react';
 import { useTimelineNavigation } from '../useTimelineNavigation';
-import { useDataStore } from '../../stores/useDataStore';
+import { useConnectionStore } from '../../stores/useConnectionStore';
+import { useProjectStore } from '../../stores/useProjectStore';
 
 // Mock dependencies
-vi.mock('../../stores/useDataStore');
+vi.mock('../../stores/useConnectionStore');
+vi.mock('../../stores/useProjectStore');
 vi.mock('../useNotifier');
 
 describe('useTimelineNavigation', () => {
@@ -18,11 +20,16 @@ describe('useTimelineNavigation', () => {
       info: vi.fn(),
     };
     
-    // Mock useDataStore to return standalone mode
-    (useDataStore as any).mockImplementation((selector) => {
+    // Mock useConnectionStore to return standalone mode
+    (useConnectionStore as any).mockImplementation((selector) => {
       if (selector.toString().includes('connectionStatus')) {
         return 'standalone';
       }
+      return vi.fn();
+    });
+    
+    // Mock useProjectStore to return null source
+    (useProjectStore as any).mockImplementation((selector) => {
       if (selector.toString().includes('currentSubtitleSource')) {
         return null;
       }
@@ -61,10 +68,14 @@ describe('useTimelineNavigation', () => {
   describe('setTimecode with imported subtitles', () => {
     it('should skip API call when current source is imported subtitles', async () => {
       // Mock connected mode but imported source
-      (useDataStore as any).mockImplementation((selector) => {
+      (useConnectionStore as any).mockImplementation((selector) => {
         if (selector.toString().includes('connectionStatus')) {
           return 'connected';
         }
+        return vi.fn();
+      });
+      
+      (useProjectStore as any).mockImplementation((selector) => {
         if (selector.toString().includes('currentSubtitleSource')) {
           return 'imported';
         }
@@ -100,10 +111,14 @@ describe('useTimelineNavigation', () => {
   describe('setTimecode in connected mode', () => {
     it('should make API call when not in standalone mode', async () => {
       // Mock connected mode with davinci source
-      (useDataStore as any).mockImplementation((selector) => {
+      (useConnectionStore as any).mockImplementation((selector) => {
         if (selector.toString().includes('connectionStatus')) {
           return 'connected';
         }
+        return vi.fn();
+      });
+      
+      (useProjectStore as any).mockImplementation((selector) => {
         if (selector.toString().includes('currentSubtitleSource')) {
           return 'davinci';
         }

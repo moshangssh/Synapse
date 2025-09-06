@@ -42,31 +42,13 @@ export const createMockSubtitles = (count: number = 4): Subtitle[] => {
 // Create mock setSubtitles function
 export const createMockSetSubtitles = () => vi.fn();
 
-// Create mock useDataStore implementation
-export const createMockDataStore = (subtitles: Subtitle[] = [], setSubtitles = vi.fn()) => {
+// Create mock useSubtitleStore implementation
+export const createMockSubtitleStore = (subtitles: Subtitle[] = [], setSubtitles = vi.fn()) => {
   return vi.fn((selector) => {
     const mockState = {
       subtitles,
-      subtitleTracks: [],
-      projectInfo: null,
-      frameRate: 24,
-      connectionStatus: 'disconnected',
-      errorMessage: null,
-      userInfo: null,
-      importedSubtitleFiles: [],
       setSubtitles,
-      setSubtitleTracks: vi.fn(),
-      setProjectInfo: vi.fn(),
-      setFrameRate: vi.fn(),
-      setConnectionStatus: vi.fn(),
-      setErrorMessage: vi.fn(),
       updateSubtitleText: vi.fn(),
-      setUserInfo: vi.fn(),
-      setImportedSubtitleFiles: vi.fn(),
-      addImportedSubtitleFile: vi.fn(),
-      removeImportedSubtitleFile: vi.fn(),
-      updateImportedSubtitleFile: vi.fn(),
-      clearImportedSubtitleFiles: vi.fn(),
       getModifiedSubtitleIndices: vi.fn(() => []),
     };
     
@@ -77,14 +59,75 @@ export const createMockDataStore = (subtitles: Subtitle[] = [], setSubtitles = v
   });
 };
 
+// Create mock useProjectStore implementation
+export const createMockProjectStore = () => {
+  return vi.fn((selector) => {
+    const mockState = {
+      subtitleTracks: [],
+      projectInfo: null,
+      frameRate: 24,
+      importedSubtitleFiles: [],
+      currentSubtitleSource: null,
+      currentImportedFileName: null,
+      setProjectInfo: vi.fn(),
+      setSubtitleTracks: vi.fn(),
+      setFrameRate: vi.fn(),
+      setImportedSubtitleFiles: vi.fn(),
+      addImportedSubtitleFile: vi.fn(),
+      removeImportedSubtitleFile: vi.fn(),
+      updateImportedSubtitleFile: vi.fn(),
+      clearImportedSubtitleFiles: vi.fn(),
+      setCurrentSubtitleSource: vi.fn(),
+      setCurrentImportedFileName: vi.fn(),
+    };
+    
+    if (typeof selector !== 'function') {
+      return mockState;
+    }
+    return selector(mockState);
+  });
+};
+
+// Create mock useConnectionStore implementation
+export const createMockConnectionStore = () => {
+  return vi.fn((selector) => {
+    const mockState = {
+      connectionStatus: 'disconnected' as const,
+      errorMessage: null,
+      userInfo: null,
+      setConnectionStatus: vi.fn(),
+      setErrorMessage: vi.fn(),
+      setUserInfo: vi.fn(),
+    };
+    
+    if (typeof selector !== 'function') {
+      return mockState;
+    }
+    return selector(mockState);
+  });
+};
+
+// Legacy mock for backward compatibility
+export const createMockDataStore = (subtitles: Subtitle[] = [], setSubtitles = vi.fn()) => {
+  return createMockSubtitleStore(subtitles, setSubtitles);
+};
+
 // Setup all common mocks for tests
 export const setupCommonTestMocks = (subtitles: Subtitle[] = []) => {
   const mockSetSubtitles = createMockSetSubtitles();
   
   mockTauriWindowApi();
   
-  vi.mock('../stores/useDataStore', () => ({
-    useDataStore: createMockDataStore(subtitles, mockSetSubtitles),
+  vi.mock('../stores/useSubtitleStore', () => ({
+    useSubtitleStore: createMockSubtitleStore(subtitles, mockSetSubtitles),
+  }));
+  
+  vi.mock('../stores/useProjectStore', () => ({
+    useProjectStore: createMockProjectStore(),
+  }));
+  
+  vi.mock('../stores/useConnectionStore', () => ({
+    useConnectionStore: createMockConnectionStore(),
   }));
   
   return { mockSetSubtitles };

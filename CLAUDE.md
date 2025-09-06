@@ -66,12 +66,17 @@ pytest tests/test_davinci_connector.py -v
 - `useUIStore`: UI 状态（侧边栏、活动视图）
 - `useSettingsStore`: 应用设置（口水词列表等）
 
-#### 2. 组件架构
+#### 2. 服务层 (Services)
+- `services/`: 所有API调用和业务逻辑的集中管理
+- 通过服务层实现关注点分离，提高代码可维护性和可测试性
+- 详情请参见 `src/services/README.md`
+
+#### 3. 组件架构
 - **布局组件**: `ActivityBar`, `StatusBar`, `MainLayout`
 - **核心功能**: `SubtitleTable`, `FindReplace`, `FillerWordRemover`
 - **通用组件**: `DiffHighlighter`, `EditableSubtitleCell`
 
-#### 3. DaVinci Resolve 集成
+#### 4. DaVinci Resolve 集成
 - `davinci_api.py`: DaVinci Resolve API 封装
 - `davinci_connector.py`: 连接管理和状态同步
 - 通过 `DaVinciResolveScript.py` 与 Resolve 通信

@@ -6,12 +6,10 @@ from timecode_utils import format_timecode, timecode_to_frames, frames_to_timeco
 from schemas import SubtitleTrackInfo, ResolveErrorCode, SubtitleExportRequest
 from davinci_connector import get_current_timeline
 from srt_utils import generate_srt_content
-from decorators import with_timeline
 
 from exceptions import NoProjectOpenError, ResolveError
 
-@with_timeline
-def get_resolve_project_info(resolve, project, timeline, frame_rate, **kwargs) -> Dict[str, Any]:
+def get_resolve_project_info(project, timeline) -> Dict[str, Any]:
     """
     获取当前 Resolve 项目和时间线的名称。
     """
@@ -25,8 +23,7 @@ def get_resolve_project_info(resolve, project, timeline, frame_rate, **kwargs) -
     return {"projectName": project_name, "timelineName": timeline_name}
 
 
-@with_timeline
-def get_subtitle_tracks(resolve, project, timeline, frame_rate, **kwargs) -> List[SubtitleTrackInfo]:
+def get_subtitle_tracks(project, timeline) -> List[SubtitleTrackInfo]:
     """
     获取当前时间线上所有字幕轨道的列表。
     """
@@ -42,8 +39,7 @@ def get_subtitle_tracks(resolve, project, timeline, frame_rate, **kwargs) -> Lis
     return tracks_data
 
 
-@with_timeline
-def get_resolve_subtitles(track_index: int = 1, resolve=None, project=None, timeline=None, frame_rate=None, **kwargs) -> Dict[str, Any]:
+def get_resolve_subtitles(project, timeline, frame_rate, track_index: int = 1) -> Dict[str, Any]:
     """
     从指定轨道提取当前时间线的字幕信息。
     """
@@ -79,8 +75,7 @@ def get_resolve_subtitles(track_index: int = 1, resolve=None, project=None, time
     return {"frameRate": frame_rate, "data": extracted_data}
 
 
-@with_timeline
-def set_resolve_timecode(in_point: str, out_point: str, jump_to: str, resolve=None, project=None, timeline=None, frame_rate=None, **kwargs) -> Dict[str, str]:
+def set_resolve_timecode(project, timeline, frame_rate, in_point: str, out_point: str, jump_to: str) -> Dict[str, str]:
     """
     在 DaVinci Resolve 中设置当前时间线的时间码。
     """
@@ -103,8 +98,7 @@ def set_resolve_timecode(in_point: str, out_point: str, jump_to: str, resolve=No
     return {"message": f"成功将时间码设置为: {target_timecode}"}
 
 
-@with_timeline
-def export_to_davinci(request: SubtitleExportRequest, resolve=None, project=None, timeline=None, frame_rate=None, **kwargs) -> Dict[str, str]:
+def export_to_davinci(project, timeline, frame_rate, request: SubtitleExportRequest) -> Dict[str, str]:
     """
     Exports subtitles to DaVinci Resolve.
     """
@@ -137,7 +131,7 @@ def export_to_davinci(request: SubtitleExportRequest, resolve=None, project=None
         # The API returns a list, we need the first item
         media_item = media_items[0]
 
-        # timeline object is already available from the decorator.
+        # timeline object is already available from the caller.
 
         # 1. 显式轨道创建
         if not timeline.AddTrack("subtitle"):

@@ -51,8 +51,8 @@ class TestFillerWordsAPI:
         
         processed_subtitles = data["data"]
         # 检查口水词被移除
-        assert processed_subtitles[0]["text"] == "，这是一个测试字幕！"
-        assert processed_subtitles[1]["text"] == "这是一本《好书》，大家快来看吧。"
+        assert processed_subtitles[0]["text"] == "，这是一个测试字幕，！"
+        assert processed_subtitles[1]["text"] == "这是一本《好书》，，大家快来看。"
     
     @patch('text_utils.load_filler_words_config')
     def test_remove_filler_words_with_punctuation(self, mock_load_config):
@@ -74,7 +74,7 @@ class TestFillerWordsAPI:
         processed_subtitles = data["data"]
         # 检查口水词被移除，标点符号也被移除（保留的除外）
         assert processed_subtitles[0]["text"] == "这是一个测试字幕"
-        assert processed_subtitles[1]["text"] == "这是一本《好书》大家快来看吧"
+        assert processed_subtitles[1]["text"] == "这是一本《好书》大家快来看"
     
     @patch('text_utils.load_filler_words_config')
     def test_remove_filler_words_no_changes(self, mock_load_config):

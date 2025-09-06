@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Button, Checkbox, FormControlLabel, Box, Typography } from '@mui/material';
 import { Trash2 } from 'lucide-react';
-import { useDataStore } from '../stores/useDataStore';
+import { useSubtitleStore } from '../stores/useSubtitleStore';
 import { useSettingsStore } from '../stores/useSettingsStore';
 import useNotifier from '../hooks/useNotifier';
 import { calculateDiffApi } from '../integration/diffApi';
+import { removeFillerWords } from '../services/subtitleService';
 
 export function FillerWordRemover() {
-  const { subtitles, setSubtitles } = useDataStore();
+  const { subtitles, setSubtitles } = useSubtitleStore();
   const { fillerWords, loadFillerWords } = useSettingsStore();
   const notify = useNotifier();
   const [removePunctuation, setRemovePunctuation] = useState(false);
@@ -19,102 +20,55 @@ export function FillerWordRemover() {
   }, [loadFillerWords]);
 
   const handleRemoveFillerWords = async () => {
+    console.log('[FillerWordRemover] 开始执行去口水词操作');
+    
     if (fillerWords.length === 0) {
+      console.warn('[FillerWordRemover] 口水词列表为空');
       notify.warning('口水词列表为空，无法执行操作。');
       return;
     }
 
     if (subtitles.length === 0) {
+      console.warn('[FillerWordRemover] 字幕列表为空');
       notify.warning('字幕列表为空，无法执行操作。');
       return;
     }
 
     setIsProcessing(true);
+    console.log(`[FillerWordRemover] 处理参数 - 字幕数量: ${subtitles.length}, 移除标点符号: ${removePunctuation}`);
 
     try {
-      // 准备API请求的数据
-      const requestData = {
-        subtitles: subtitles.map(subtitle => ({
-          id: subtitle.id,
-          startTimecode: subtitle.startTimecode,
-          endTimecode: subtitle.endTimecode,
-          text: subtitle.text
-        })),
-        removePunctuation: removePunctuation
-      };
-
       // 调用后端API
-      const response = await fetch('http://localhost:8000/api/v1/subtitles/remove-filler-words', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData),
-      });
+      console.log('[FillerWordRemover] 调用后端API进行处理');
+      const processedSubtitles = await removeFillerWords(subtitles, removePunctuation);
+      console.log(`[FillerWordRemover] 后端处理完成，返回 ${processedSubtitles.length} 条字幕`);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        // 处理API错误响应
-        const errorDetail = data.detail || {};
-        const errorMessage = errorDetail.message || '移除口水词时发生错误';
-        notify.error(errorMessage);
-        return;
-      }
-
-      // 处理成功的响应
-      const processedSubtitles = data.data;
-      
       // 检查是否有变化
       const hasChanges = processedSubtitles.some((processedSubtitle: any, index: number) => 
         processedSubtitle.text !== subtitles[index].text
       );
+      
+      console.log(`[FillerWordRemover] 检查变化结果: ${hasChanges}`);
 
       if (hasChanges) {
+        console.log('[FillerWordRemover] 发现变化，更新字幕状态');
         // 创建原始副本用于撤销
         const originalSubtitles = [...subtitles];
-        
-        // 转换处理后的字幕数据并更新状态，先使用占位符差异
-        const updatedSubtitles = subtitles.map((subtitle, index) => ({
-          ...subtitle,
-          text: processedSubtitles[index].text,
-          // 使用占位符差异
-          diffs: [{ type: 'normal' as const, value: processedSubtitles[index].text }],
-          // 标记为已修改
-          isModified: processedSubtitles[index].text !== subtitle.originalText
+
+        // 直接使用后端处理好的数据进行更新
+        const updatedSubtitles = processedSubtitles.map((processed, index) => ({
+          ...subtitles[index],
+          text: processed.text,
+          diffs: processed.diffs, // 直接使用后端返回的diffs
+          isModified: processed.text !== subtitles[index].originalText,
         }));
 
         setSubtitles(updatedSubtitles);
-        
-        // 异步计算所有修改字幕的差异
-        const updateAllDiffs = async () => {
-          for (let index = 0; index < updatedSubtitles.length; index++) {
-            const subtitle = updatedSubtitles[index];
-            if (subtitle.text === subtitles[index].text) continue; // 跳过未修改的字幕
 
-            try {
-              const diffs = await calculateDiffApi(subtitle.originalText, subtitle.text);
-              
-              // 更新单个字幕的差异数据
-              setSubtitles((currentSubtitles: any[]) => 
-                currentSubtitles.map((s: any) => 
-                  s.id === subtitle.id 
-                    ? { ...s, diffs }
-                    : s
-                )
-              );
-            } catch (error) {
-              console.error(`计算字幕 ${subtitle.id} 的差异失败:`, error);
-              // 保持占位符差异
-            }
-          }
-        };
-
-        updateAllDiffs();
-        
         notify.success('已成功移除所有口水词！', {
           action: () => (
             <Button color="inherit" size="small" onClick={() => {
+              console.log('[FillerWordRemover] 用户执行撤销操作');
               setSubtitles(originalSubtitles);
             }}>
               撤销
@@ -122,12 +76,14 @@ export function FillerWordRemover() {
           ),
         });
       } else {
+        console.log('[FillerWordRemover] 未发现可移除的口水词');
         notify.info('未发现可移除的口水词。');
       }
     } catch (error) {
-      console.error('Failed to remove filler words:', error);
+      console.error('[FillerWordRemover] 处理失败:', error);
       notify.error('移除失败，请检查控制台获取更多信息。');
     } finally {
+      console.log('[FillerWordRemover] 处理完成');
       setIsProcessing(false);
     }
   };

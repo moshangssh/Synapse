@@ -11,7 +11,8 @@ import {
 } from '@mui/material';
 import { InsertDriveFile, Description } from '@mui/icons-material';
 import { RefreshCcw, Import } from 'lucide-react';
-import { useDataStore } from '../../stores/useDataStore';
+import { useSubtitleStore } from '../../stores/useSubtitleStore';
+import { useProjectStore } from '../../stores/useProjectStore';
 import { useSrtImporter } from '../../hooks/useSrtImporter';
 import { useUIStore } from '../../stores/useUIStore';
 import { useState } from 'react';
@@ -38,11 +39,11 @@ export function FileExplorer({
   onTrackSelect,
 }: FileExplorerProps) {
   const theme = useTheme();
-  const subtitleTracks = useDataStore((state) => state.subtitleTracks);
-  const setSubtitles = useDataStore((state) => state.setSubtitles);
-  const importedSubtitleFiles = useDataStore((state) => state.importedSubtitleFiles);
-  const setCurrentSubtitleSource = useDataStore((state) => state.setCurrentSubtitleSource);
-  const setCurrentImportedFileName = useDataStore((state) => state.setCurrentImportedFileName);
+  const subtitleTracks = useProjectStore((state) => state.subtitleTracks);
+  const setSubtitles = useSubtitleStore((state) => state.setSubtitles);
+  const importedSubtitleFiles = useProjectStore((state) => state.importedSubtitleFiles);
+  const setCurrentSubtitleSource = useProjectStore((state) => state.setCurrentSubtitleSource);
+  const setCurrentImportedFileName = useProjectStore((state) => state.setCurrentImportedFileName);
   const setActiveTrackIndex = useUIStore((state) => state.setActiveTrackIndex);
   const [selection, setSelection] = useState<SelectionState>({ type: null, id: 0 });
   

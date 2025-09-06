@@ -31,7 +31,7 @@ This is a test.
             "fileName": "test.srt"
         }
         
-        response = client.post("/api/v1/import/srt", json=payload)
+        response = client.post("/api/v1/subtitles/import/srt", json=payload)
         
         assert response.status_code == 200
         data = response.json()
@@ -67,7 +67,7 @@ Hello, world!
             "fileName": "test.srt"
         }
         
-        response = client.post("/api/v1/import/srt", json=payload)
+        response = client.post("/api/v1/subtitles/import/srt", json=payload)
         
         assert response.status_code == 200
         data = response.json()
@@ -84,7 +84,7 @@ Hello, world!
             "fileName": "empty.srt"
         }
         
-        response = client.post("/api/v1/import/srt", json=payload)
+        response = client.post("/api/v1/subtitles/import/srt", json=payload)
         
         assert response.status_code == 400
         data = response.json()
@@ -105,7 +105,7 @@ It has no timecodes
             "fileName": "invalid.srt"
         }
         
-        response = client.post("/api/v1/import/srt", json=payload)
+        response = client.post("/api/v1/subtitles/import/srt", json=payload)
         
         assert response.status_code == 400
         data = response.json()
@@ -127,7 +127,7 @@ This has invalid timecode format
             "fileName": "invalid.srt"
         }
         
-        response = client.post("/api/v1/import/srt", json=payload)
+        response = client.post("/api/v1/subtitles/import/srt", json=payload)
         
         assert response.status_code == 400
         data = response.json()
@@ -147,7 +147,7 @@ This has invalid timecode format
             "fileName": "large.srt"
         }
         
-        response = client.post("/api/v1/import/srt", json=payload)
+        response = client.post("/api/v1/subtitles/import/srt", json=payload)
         
         assert response.status_code == 413
         data = response.json()
@@ -166,7 +166,7 @@ This has invalid timecode format
             "fileName": "bom.srt"
         }
         
-        response = client.post("/api/v1/import/srt", json=payload)
+        response = client.post("/api/v1/subtitles/import/srt", json=payload)
         
         assert response.status_code == 200
         data = response.json()
@@ -190,7 +190,7 @@ Third line
             "fileName": "multiline.srt"
         }
         
-        response = client.post("/api/v1/import/srt", json=payload)
+        response = client.post("/api/v1/subtitles/import/srt", json=payload)
         
         assert response.status_code == 200
         data = response.json()
@@ -206,7 +206,7 @@ Third line
             "fileName": "test.srt"
         }
         
-        response = client.post("/api/v1/import/srt", json=payload)
+        response = client.post("/api/v1/subtitles/import/srt", json=payload)
         assert response.status_code == 422  # Unprocessable Entity
         
         # 缺少fileName字段
@@ -214,7 +214,7 @@ Third line
             "content": "1\n00:00:01,000 --> 00:00:03,000\nHello"
         }
         
-        response = client.post("/api/v1/import/srt", json=payload)
+        response = client.post("/api/v1/subtitles/import/srt", json=payload)
         assert response.status_code == 422  # Unprocessable Entity
     
     def test_import_srt_with_mixed_valid_invalid_blocks(self):
@@ -235,7 +235,7 @@ Another valid subtitle
             "fileName": "mixed.srt"
         }
         
-        response = client.post("/api/v1/import/srt", json=payload)
+        response = client.post("/api/v1/subtitles/import/srt", json=payload)
         
         assert response.status_code == 200
         data = response.json()

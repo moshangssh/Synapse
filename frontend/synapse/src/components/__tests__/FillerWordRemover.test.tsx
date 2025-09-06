@@ -2,13 +2,19 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
 import { FillerWordRemover } from '../FillerWordRemover';
 
+// Mock the subtitleService
+const mockRemoveFillerWords = vi.fn();
+vi.mock('../../services/subtitleService', () => ({
+  removeFillerWords: mockRemoveFillerWords
+}));
+
 // Mock the stores and hooks
-const mockUseDataStore = vi.fn();
+const mockUseSubtitleStore = vi.fn();
 const mockUseSettingsStore = vi.fn();
 const mockUseNotifier = vi.fn();
 
-vi.mock('../../stores/useDataStore', () => ({
-  useDataStore: () => mockUseDataStore()
+vi.mock('../../stores/useSubtitleStore', () => ({
+  useSubtitleStore: () => mockUseSubtitleStore()
 }));
 
 vi.mock('../../stores/useSettingsStore', () => ({
@@ -19,6 +25,24 @@ vi.mock('../../hooks/useNotifier', () => ({
   default: () => mockUseNotifier()
 }));
 
+vi.mock('../../services/subtitleService', () => ({
+  removeFillerWords: vi.fn()
+}));
+
+const mockSubtitles = [
+  {
+    id: 1,
+    startTimecode: '00:00:01:00',
+    endTimecode: '00:00:05:00',
+    text: '嗯，这是一个测试字幕，啊！',
+    originalText: '嗯，这是一个测试字幕，啊！',
+    diffs: [],
+    isModified: false
+  }
+];
+
+const mockFillerWords = ['嗯', '啊', '哦'];
+
 describe('FillerWordRemover', () => {
   const mockSetSubtitles = vi.fn();
   const mockNotify = {
@@ -28,26 +52,13 @@ describe('FillerWordRemover', () => {
     info: vi.fn()
   };
   const mockLoadFillerWords = vi.fn();
-
-  const mockSubtitles = [
-    {
-      id: 1,
-      startTimecode: '00:00:01:00',
-      endTimecode: '00:00:05:00',
-      text: '嗯，这是一个测试字幕，啊！',
-      originalText: '嗯，这是一个测试字幕，啊！',
-      diffs: [],
-      isModified: false
-    }
-  ];
-
-  const mockFillerWords = ['嗯', '啊', '哦'];
+  const mockRemoveFillerWords = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
 
     // Setup mock implementations
-    mockUseDataStore.mockReturnValue({
+    mockUseSubtitleStore.mockReturnValue({
       subtitles: mockSubtitles,
       setSubtitles: mockSetSubtitles
     });
@@ -59,12 +70,12 @@ describe('FillerWordRemover', () => {
 
     mockUseNotifier.mockReturnValue(mockNotify);
 
-    // Mock fetch
-    global.fetch = vi.fn();
+    // Mock service functions
+    mockRemoveFillerWords.mockResolvedValue(mockSubtitles);
   });
 
   afterEach(() => {
-    (global.fetch as any).mockClear();
+    mockRemoveFillerWords.mockClear();
   });
 
   it('renders correctly', () => {
@@ -86,7 +97,7 @@ describe('FillerWordRemover', () => {
   });
 
   it('disables button when no subtitles', () => {
-    mockUseDataStore.mockReturnValue({
+    mockUseSubtitleStore.mockReturnValue({
       subtitles: [],
       setSubtitles: mockSetSubtitles
     });
@@ -97,14 +108,11 @@ describe('FillerWordRemover', () => {
   });
 
   it('calls API when button is clicked', async () => {
-    const mockFetch = global.fetch as any;
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        status: 'success',
-        data: mockSubtitles.map(sub => ({ ...sub, text: sub.text }))
-      })
-    });
+    const processedSubtitles = mockSubtitles.map(sub => ({ ...sub, text: sub.text }));
+    
+    // 重新导入模块以获取mock函数的引用
+    const { removeFillerWords } = await import('../../services/subtitleService');
+    removeFillerWords.mockResolvedValueOnce(processedSubtitles);
 
     render(<FillerWordRemover />);
     
@@ -112,31 +120,18 @@ describe('FillerWordRemover', () => {
     fireEvent.click(button);
 
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:8000/api/v1/subtitles/remove-filler-words',
-        expect.objectContaining({
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        })
+      expect(removeFillerWords).toHaveBeenCalledWith(
+        mockSubtitles,
+        false // removePunctuation is false by default
       );
     });
   });
 
   it('shows loading state during API call', async () => {
-    const mockFetch = global.fetch as any;
-    
     // Mock a delayed response
-    mockFetch.mockImplementationOnce(() => 
+    mockRemoveFillerWords.mockImplementationOnce(() => 
       new Promise(resolve => {
-        setTimeout(() => resolve({
-          ok: true,
-          json: async () => ({
-            status: 'success',
-            data: mockSubtitles
-          })
-        }), 100);
+        setTimeout(() => resolve(mockSubtitles), 100);
       })
     );
 
@@ -153,13 +148,7 @@ describe('FillerWordRemover', () => {
   });
 
   it('handles API errors', async () => {
-    const mockFetch = global.fetch as any;
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      json: async () => ({
-        detail: { message: '服务器错误' }
-      })
-    });
+    mockRemoveFillerWords.mockRejectedValueOnce(new Error('服务器错误'));
 
     render(<FillerWordRemover />);
     
@@ -167,7 +156,7 @@ describe('FillerWordRemover', () => {
     fireEvent.click(button);
 
     await waitFor(() => {
-      expect(mockNotify.error).toHaveBeenCalledWith('服务器错误');
+      expect(mockNotify.error).toHaveBeenCalledWith('移除失败，请检查控制台获取更多信息。');
     });
   });
 

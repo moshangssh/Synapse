@@ -2,19 +2,19 @@ import { Box, Typography, Paper, useTheme } from '@mui/material';
 import { Circle } from 'lucide-react';
 import { useMemo } from 'react';
 
-import { useDataStore } from '../../stores/useDataStore';
+import { useConnectionStore } from '../../stores/useConnectionStore';
+import { useSubtitleStore } from '../../stores/useSubtitleStore';
+import { useProjectStore } from '../../stores/useProjectStore';
 import { useUIStore } from '../../stores/useUIStore';
 import { JumpModeSelector } from './JumpModeSelector';
 
 export function StatusBar() {
   const theme = useTheme();
   const selectedSubtitleId = useUIStore((state) => state.selectedSubtitleId);
-  const {
-    connectionStatus,
-    errorMessage,
-    subtitles,
-    projectInfo,
-  } = useDataStore();
+  const connectionStatus = useConnectionStore((state) => state.connectionStatus);
+  const errorMessage = useConnectionStore((state) => state.errorMessage);
+  const subtitles = useSubtitleStore((state) => state.subtitles);
+  const projectInfo = useProjectStore((state) => state.projectInfo);
 
   const statusConfig = {
     connected: { label: '已连接', color: 'success', iconColor: '#4ade80' },
@@ -26,11 +26,23 @@ export function StatusBar() {
 
   const { label, iconColor } = statusConfig[connectionStatus];
   const [totalChars, originalChars] = useMemo(() => {
+    // 添加类型检查保护
+    if (!Array.isArray(subtitles)) {
+      console.error('subtitles is not an array:', subtitles);
+      return [0, 0];
+    }
+    
     const total = subtitles.reduce((acc, s) => acc + s.text.length, 0);
-    const original = subtitles.reduce((acc, s) => acc + s.originalText.length, 0);
+    const original = subtitles.reduce((acc, s) => acc + (s.originalText?.length || 0), 0);
     return [total, original];
   }, [subtitles]);
   const selectedStartTimecode = useMemo(() => {
+    // 添加类型检查保护
+    if (!Array.isArray(subtitles)) {
+      console.error('subtitles is not an array:', subtitles);
+      return 'N/A';
+    }
+    
     return subtitles.find(s => s.id === selectedSubtitleId)?.startTimecode ?? 'N/A';
   }, [subtitles, selectedSubtitleId]);
 

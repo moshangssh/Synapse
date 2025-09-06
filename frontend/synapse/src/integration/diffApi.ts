@@ -1,4 +1,5 @@
 import { DiffPart } from '../components/DiffHighlighter';
+import { calculateDiff } from '../services/utilService';
 
 export interface DiffRequest {
   original_text: string;
@@ -20,32 +21,8 @@ export const calculateDiffApi = async (
   originalText: string,
   newText: string
 ): Promise<DiffPart[]> => {
-  const request: DiffRequest = {
-    original_text: originalText,
-    new_text: newText,
-  };
-
   try {
-    const response = await fetch('http://localhost:8000/api/v1/utils/diff', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.detail?.message || '计算文本差异失败');
-    }
-
-    const result: DiffResponse = await response.json();
-    
-    if (result.status !== 'success') {
-      throw new Error('API返回错误状态');
-    }
-
-    return result.data;
+    return await calculateDiff(originalText, newText);
   } catch (error) {
     console.error('计算文本差异失败:', error);
     throw error instanceof Error ? error : new Error('计算文本差异失败');

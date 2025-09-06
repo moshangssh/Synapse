@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>测试替换功能</title>
+</head>
+<body>
+    <h1>测试替换功能</h1>
+    <button id="testBtn">测试替换</button>
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            try {
+                const response = await fetch('http://localhost:8000/api/v1/subtitles/replace-all', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        subtitles: [
+                            {
+                                id: 1,
+                                startTimecode: "00:00:01:00",
+                                endTimecode: "00:00:03:00",
+                                text: "Hello World Test"
+                            },
+                            {
+                                id: 2,
+                                startTimecode: "00:00:03:00",
+                                endTimecode: "00:00:05:00",
+                                text: "Goodbye World Test"
+                            }
+                        ],
+                        searchQuery: "World",
+                        replaceQuery: "Earth"
+                    })
+                });
+
+                const data = await response.json();
+                document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('result').innerHTML = '<p style="color: red;">错误: ' + error.message + '</p>';
+            }
+        });
+    </script>
+</body>
+</html>

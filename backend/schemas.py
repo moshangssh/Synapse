@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Union, Dict, Any
+from typing import List, Union, Dict, Any, Optional
 from enum import Enum
 
 # --- Models for SRT Export ---
@@ -36,6 +36,7 @@ class SubtitleItem(BaseModel):
     startTimecode: str = Field(..., example="01:00:02:10")
     endTimecode: str = Field(..., example="01:00:05:15")
     text: str = Field(..., example="这是一条字幕。")
+    diffs: Optional[List[DiffPartModel]] = None
 
 class SuccessResponse(BaseModel):
     status: str = "success"
@@ -106,6 +107,7 @@ class RemoveFillerWordsResponse(BaseModel):
 class ReplaceSubtitleItem(BaseModel):
     id: int
     text: str
+    diffs: List[DiffPartModel]
 
 class ReplaceAllRequest(BaseModel):
     subtitles: List[SubtitleItem]

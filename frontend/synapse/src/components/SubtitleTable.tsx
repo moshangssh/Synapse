@@ -4,7 +4,7 @@ import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 import SubtitleRow from './SubtitleRow';
 import { idCellStyle, timecodeCellStyle, textCellStyle, scrollbarStyle } from './sharedStyles';
 import { useTimelineNavigation } from '../hooks/useTimelineNavigation';
-import { useDataStore } from '../stores/useDataStore';
+import { useSubtitleStore } from '../stores/useSubtitleStore';
 import { useUIStore } from '../stores/useUIStore';
 import { darkTheme, lightTheme } from './layout/ThemeProvider';
 import { useSettingsStore } from '../stores/useSettingsStore';
@@ -37,9 +37,9 @@ const SubtitleTable: React.FC<SubtitleTableProps> = ({ jumpToSubtitleId, onRowCl
   const { setTimecode } = useTimelineNavigation();
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const subtitles = useDataStore((state) => state.subtitles);
-  const updateSubtitleText = useDataStore((state) => state.updateSubtitleText);
-  const modifiedIndices = useDataStore((state) => state.getModifiedSubtitleIndices());
+  const subtitles = useSubtitleStore((state) => state.subtitles);
+  const updateSubtitleText = useSubtitleStore((state) => state.updateSubtitleText);
+  const modifiedIndices = useSubtitleStore((state) => state.getModifiedSubtitleIndices());
   const jumpTo = useUIStore((state) => state.jumpTo);
   const themeMode = useSettingsStore((state) => state.theme);
 
@@ -58,6 +58,12 @@ const SubtitleTable: React.FC<SubtitleTableProps> = ({ jumpToSubtitleId, onRowCl
   }, []);
 
   useEffect(() => {
+    // 添加类型检查保护
+    if (!Array.isArray(subtitles)) {
+      console.error('subtitles is not an array:', subtitles);
+      return;
+    }
+    
     if (jumpToSubtitleId !== null) {
       const index = subtitles.findIndex(s => s.id === jumpToSubtitleId);
       if (index !== -1 && virtuosoRef.current) {
@@ -85,6 +91,12 @@ const SubtitleTable: React.FC<SubtitleTableProps> = ({ jumpToSubtitleId, onRowCl
   ), [selectedRow, editingId, handleRowClick, handleSubtitleChange, handleSetEditingId]);
 
   const memoizedModifiedMarkers = useMemo(() => {
+    // 添加类型检查保护
+    if (!Array.isArray(subtitles)) {
+      console.error('subtitles is not an array:', subtitles);
+      return null;
+    }
+    
     const totalLines = subtitles.length;
     if (totalLines === 0) return null;
 
@@ -92,6 +104,12 @@ const SubtitleTable: React.FC<SubtitleTableProps> = ({ jumpToSubtitleId, onRowCl
     let lastMarker: { top: number; height: number, key: number } | null = null;
 
     modifiedIndices.forEach((index) => {
+      // 添加边界检查
+      if (index >= subtitles.length) {
+        console.error('Index out of bounds:', index, 'subtitles length:', subtitles.length);
+        return;
+      }
+      
       const position = (index / totalLines) * 100;
       const height = (1 / totalLines) * 100;
 
@@ -129,7 +147,7 @@ const SubtitleTable: React.FC<SubtitleTableProps> = ({ jumpToSubtitleId, onRowCl
           <Virtuoso
             ref={virtuosoRef}
             style={{ height: '100%' }}
-            data={subtitles}
+            data={Array.isArray(subtitles) ? subtitles : []}
             itemContent={rowContent}
           />
           <ModifiedLinesOverlay>
