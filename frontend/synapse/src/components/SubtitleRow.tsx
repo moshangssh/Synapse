@@ -6,6 +6,9 @@ import {
   timecodeCellStyle,
 } from './sharedStyles';
 import EditableSubtitleCell from './EditableSubtitleCell';
+// 导入新的转换函数和需要的 Store
+import { convertFrameTcToMsTc } from '../utils/timecodeConverter';
+import { useProjectStore } from '../stores/useProjectStore';
 
 interface SubtitleRowProps {
   row: Subtitle;
@@ -24,9 +27,22 @@ const SubtitleRow: React.FC<SubtitleRowProps> = ({
   onSubtitleChange,
   setEditingId,
 }) => {
+  // 从 Store 中获取帧率和当前字幕来源
+  const frameRate = useProjectStore((state) => state.frameRate);
+  const currentSubtitleSource = useProjectStore((state) => state.currentSubtitleSource);
+
   const handleRowDoubleClick = () => {
     setEditingId(row.id);
   };
+
+  // 根据字幕来源决定是否转换时间码
+  const displayStartTimecode = currentSubtitleSource === 'davinci' 
+    ? convertFrameTcToMsTc(row.startTimecode, frameRate || 24) 
+    : row.startTimecode;
+
+  const displayEndTimecode = currentSubtitleSource === 'davinci' 
+    ? convertFrameTcToMsTc(row.endTimecode, frameRate || 24) 
+    : row.endTimecode;
 
   return (
     <Box
@@ -54,10 +70,12 @@ const SubtitleRow: React.FC<SubtitleRowProps> = ({
         {row.id}
       </Box>
       <Box component="div" sx={{ ...timecodeCellStyle, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {row.startTimecode}
+        {/* 使用转换后的时间码进行显示 */}
+        {displayStartTimecode}
       </Box>
       <Box component="div" sx={{ ...timecodeCellStyle, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {row.endTimecode}
+        {/* 使用转换后的时间码进行显示 */}
+        {displayEndTimecode}
       </Box>
       <EditableSubtitleCell
         row={row}

@@ -69,7 +69,7 @@ export function FileExplorer({
             borderRight: '1px solid #3c3c3c',
           }}
         >
-      <Box sx={{ p: 1.5, borderBottom: '1px solid #3c3c3c', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Box sx={{ p: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="subtitle1" sx={{ color: '#cccccc', fontWeight: 500 }}>
           字幕源
         </Typography>

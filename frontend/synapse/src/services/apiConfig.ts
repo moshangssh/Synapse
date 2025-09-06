@@ -5,7 +5,7 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localho
 export const API_ENDPOINTS = {
   // 字幕相关
   SUBTITLES: '/api/v1/subtitles',
-  SUBTITLE_TRACKS: '/api/v1/timeline/subtitle_tracks',
+  SUBTITLE_TRACKS: '/api/v1/subtitles/tracks',
   REMOVE_FILLER_WORDS: '/api/v1/subtitles/remove-filler-words',
   REPLACE_ALL: '/api/v1/subtitles/replace-all',
   

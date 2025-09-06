@@ -104,6 +104,9 @@ export function MainLayout() {
       if (tracks.length > 0) {
         const firstTrackIndex = tracks[0].track_index;
         setActiveTrackIndex(firstTrackIndex);
+        // 设置字幕来源为 davinci，确保时间码正确转换
+        setCurrentSubtitleSource('davinci');
+        setCurrentImportedFileName(null);
         // The useEffect hook will trigger fetchSubtitles when activeTrackIndex is set.
         // We only need to fetch non-critical project info here.
         await fetchProjectInfo();
@@ -112,6 +115,9 @@ export function MainLayout() {
         setConnectionStatus("connected");
         setSubtitles([]);
         setActiveTrackIndex(null);
+        // 重置字幕来源状态
+        setCurrentSubtitleSource(null);
+        setCurrentImportedFileName(null);
       }
     } catch (error: any) {
       if (!currentErrorMessage) {
@@ -119,6 +125,10 @@ export function MainLayout() {
       }
       setConnectionStatus("error");
       setSubtitles([]);
+      setActiveTrackIndex(null);
+      // 重置字幕来源状态
+      setCurrentSubtitleSource(null);
+      setCurrentImportedFileName(null);
     } finally {
       setLoading(false);
     }
@@ -249,7 +259,7 @@ export function MainLayout() {
       case 'search':
         return (
           <Paper sx={commonPaperStyles}>
-            <Box sx={{ p: 1.5, borderBottom: '1px solid #3c3c3c' }}>
+            <Box sx={{ p: 1.5 }}>
               <Typography variant="subtitle1" sx={{ color: '#cccccc', fontWeight: 500 }}>
                 Search
               </Typography>
@@ -278,7 +288,7 @@ export function MainLayout() {
       case 'git':
         return (
           <Paper sx={commonPaperStyles}>
-            <Box sx={{ p: 1.5, borderBottom: '1px solid #3c3c3c' }}>
+            <Box sx={{ p: 1.5 }}>
               <Typography variant="subtitle1" sx={{ color: '#cccccc', fontWeight: 500 }}>
                 Source Control
               </Typography>

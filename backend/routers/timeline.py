@@ -1,14 +1,13 @@
 from fastapi import APIRouter, HTTPException
 from typing import Union
 
-from davinci_api import set_resolve_timecode, get_subtitle_tracks
+from davinci_api import set_resolve_timecode
 from davinci_connector import get_current_timeline
 from schemas import (
     TimecodeRequest,
     SuccessResponse,
     ErrorResponse,
-    ResolveErrorCode,
-    SubtitleTrackListResponse
+    ResolveErrorCode
 )
 from exceptions import ResolveError, ResolveConnectionError, NoProjectOpenError, NoActiveTimelineError
 
@@ -38,15 +37,3 @@ def set_timecode(request: TimecodeRequest):
         raise HTTPException(status_code=500, detail={"status": "error", "message": f"An unexpected error occurred: {e}"})
 
 
-@router.get("/subtitle_tracks",
-            response_model=Union[SubtitleTrackListResponse, ErrorResponse],
-            summary="获取DaVinci Resolve时间线上所有的字幕轨道")
-def get_subtitle_tracks_endpoint():
-    try:
-        resolve, project, timeline, frame_rate = get_current_timeline()
-        tracks = get_subtitle_tracks(project, timeline)
-        return {"status": "success", "data": tracks}
-    except (ResolveConnectionError, NoProjectOpenError, NoActiveTimelineError) as e:
-        raise HTTPException(status_code=503, detail={"status": "error", "message": str(e)})
-    except ResolveError as e:
-        raise HTTPException(status_code=500, detail={"status": "error", "message": str(e)})

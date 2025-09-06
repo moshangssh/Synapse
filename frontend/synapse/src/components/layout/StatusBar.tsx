@@ -57,8 +57,7 @@ export function StatusBar() {
             justifyContent: 'space-between',
             paddingX: 1.5,
             borderRadius: 0,
-            borderTop: `1px solid ${theme.palette.divider}`,
-          }}
+            }}
         >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>

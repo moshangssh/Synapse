@@ -22,7 +22,7 @@ export function OptimizerSidebar() {
         borderRight: `1px solid ${theme.palette.divider}`,
       }}
     >
-      <Box sx={{ p: 1.5, borderBottom: `1px solid ${theme.palette.divider}` }}>
+      <Box sx={{ p: 1.5 }}>
         <Typography variant="subtitle1" sx={{ color: theme.palette.text.primary, fontWeight: 500 }}>
           Optimizer
         </Typography>

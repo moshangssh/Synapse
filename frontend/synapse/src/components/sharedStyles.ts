@@ -15,8 +15,8 @@ export const tableRowStyle: SxProps<Theme> = {
   width: '100%',
 };
 
-export const idCellStyle: SxProps<Theme> = { width: '80px', flexShrink: 0 };
-export const timecodeCellStyle: SxProps<Theme> = { width: '150px', flexShrink: 0 };
+export const idCellStyle: SxProps<Theme> = { width: '60px', flexShrink: 0 };
+export const timecodeCellStyle: SxProps<Theme> = { width: '120px', flexShrink: 0 };
 export const textCellStyle: SxProps<Theme> = {
   flexGrow: 1,
   padding: 0,
