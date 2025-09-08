@@ -38,3 +38,4 @@ teams/
 .roomdes
 backend_code.xml
 frontend_code.xml
+backend/.env
