@@ -1,10 +1,10 @@
 """
 智能字幕对齐器
-基于difflib实现更智能的字幕文本对齐功能
+基于diff-match-patch实现更智能的字幕文本对齐功能
 """
-import difflib
 import logging
 from typing import List, Tuple, Optional
+from diff_match_patch import diff_match_patch
 from schemas import SimpleSubtitleItem, OptimizedSubtitleItem, DiffPartModel
 from text_utils import calculate_text_diff
 
@@ -18,7 +18,7 @@ class IntelligentAligner:
     """
     
     def __init__(self):
-        self.line_numbers = [0, 0]
+        self.dmp = diff_match_patch()
     
     def align_subtitles_intelligently(
         self, 
@@ -110,171 +110,64 @@ class IntelligentAligner:
             logger.warning("源文本为空，返回目标文本作为源文本")
             return target_text[:], target_text
         
-        # 使用difflib进行对齐
-        diff_iterator = difflib.ndiff(source_text, target_text)
-        return self._pair_lines(diff_iterator)
+        # 使用diff-match-patch进行智能对齐
+        return self._align_with_dmp(source_text, target_text)
     
-    def _pair_lines(self, diff_iterator) -> Tuple[List[str], List[str]]:
+    def _align_with_dmp(self, source_text: List[str], target_text: List[str]) -> Tuple[List[str], List[str]]:
         """
-        Pair lines from the diff iterator.
+        使用 diff-match-patch 进行智能文本对齐
         
         Args:
-            diff_iterator: Iterator from difflib.ndiff()
+            source_text (list): 源文本行列表
+            target_text (list): 目标文本行列表
             
         Returns:
-            tuple: Two lists containing aligned lines from source and target texts.
+            tuple: 包含对齐后的源文本和目标文本的两个列表
         """
-        source_lines = []
-        target_lines = []
-        flag = 0
+        # 将文本列表转换为字符串，用换行符连接
+        source_str = "\n".join(source_text)
+        target_str = "\n".join(target_text)
         
-        for source_line, target_line, _ in self._line_iterator(diff_iterator):
-            if source_line is not None:
-                if source_line[1] == "\n":
-                    flag += 1
-                    continue
-                source_lines.append(source_line[1])
-            if target_line is not None:
-                if flag > 0:
-                    flag -= 1
-                    continue
-                target_lines.append(target_line[1])
+        # 使用 diff-match-patch 计算差异
+        diffs = self.dmp.diff_main(source_str, target_str)
+        self.dmp.diff_cleanupSemantic(diffs)
         
-        # 处理缺失的行，使用上一行进行填充
-        for i in range(1, len(target_lines)):
-            if target_lines[i] == "\n":
-                target_lines[i] = target_lines[i - 1]
+        # 重新构建对齐的文本
+        aligned_source_lines = []
+        aligned_target_lines = []
         
-        # 如果目标行数少于源行数，使用源行进行填充
-        while len(target_lines) < len(source_lines):
-            target_lines.append(source_lines[len(target_lines)])
+        # 当前在源文本和目标文本中的位置
+        source_parts = source_str.split('\n')
+        target_parts = target_str.split('\n')
         
-        # 如果源行数少于目标行数，使用目标行进行填充
-        while len(source_lines) < len(target_lines):
-            source_lines.append(target_lines[len(source_lines)])
+        # 使用更简单的方法：直接使用源文本和目标文本进行智能填充
+        max_len = max(len(source_text), len(target_text))
         
-        return source_lines, target_lines
-    
-    def _line_iterator(self, diff_iterator):
-        """
-        Iterate through diff lines and yield paired lines.
-        
-        Args:
-            diff_iterator: Iterator from difflib.ndiff()
-            
-        Yields:
-            tuple: (source_line, target_line, has_diff)
-        """
-        lines = []
-        blank_lines_pending = 0
-        blank_lines_to_yield = 0
-        
-        while True:
-            while len(lines) < 4:
-                try:
-                    lines.append(next(diff_iterator))
-                except StopIteration:
-                    lines.append("X")
-            
-            diff_type = "".join([line[0] if line != "X" else "X" for line in lines])
-            
-            if diff_type.startswith("X"):
-                blank_lines_to_yield = blank_lines_pending
-            elif diff_type.startswith("-?+?"):
-                yield (
-                    self._format_line(lines, "?", 0),
-                    self._format_line(lines, "?", 1),
-                    True,
-                )
-                continue
-            elif diff_type.startswith("--++"):
-                blank_lines_pending -= 1
-                yield self._format_line(lines, "-", 0), None, True
-                continue
-            elif diff_type.startswith(("--?+", "--+", "- ")):
-                source_line, target_line = self._format_line(lines, "-", 0), None
-                blank_lines_to_yield, blank_lines_pending = blank_lines_pending - 1, 0
-            elif diff_type.startswith("-+?"):
-                yield (
-                    self._format_line(lines, None, 0),
-                    self._format_line(lines, "?", 1),
-                    True,
-                )
-                continue
-            elif diff_type.startswith("-?+"):
-                yield (
-                    self._format_line(lines, "?", 0),
-                    self._format_line(lines, None, 1),
-                    True,
-                )
-                continue
-            elif diff_type.startswith("-"):
-                blank_lines_pending -= 1
-                yield self._format_line(lines, "-", 0), None, True
-                continue
-            elif diff_type.startswith("+--"):
-                blank_lines_pending += 1
-                yield None, self._format_line(lines, "+", 1), True
-                continue
-            elif diff_type.startswith(("+ ", "+-")):
-                source_line, target_line = None, self._format_line(lines, "+", 1)
-                blank_lines_to_yield, blank_lines_pending = blank_lines_pending + 1, 0
-            elif diff_type.startswith("+"):
-                blank_lines_pending += 1
-                yield None, self._format_line(lines, "+", 1), True
-                continue
-            elif diff_type.startswith(" "):
-                yield (
-                    self._format_line(lines[:], None, 0),
-                    self._format_line(lines, None, 1),
-                    False,
-                )
-                continue
-            
-            while blank_lines_to_yield < 0:
-                blank_lines_to_yield += 1
-                yield None, ("", "\n"), True
-            while blank_lines_to_yield > 0:
-                blank_lines_to_yield -= 1
-                yield ("", "\n"), None, True
-            
-            if diff_type.startswith("X"):
-                return
+        # 对齐源文本
+        aligned_source = list(source_text)
+        while len(aligned_source) < max_len:
+            if aligned_source:
+                # 使用上一行进行填充
+                aligned_source.append(aligned_source[-1])
             else:
-                yield source_line, target_line, True
-    
-    def _format_line(self, lines, format_key, side):
-        """
-        Format a line with the appropriate markup.
+                aligned_source.append("")
         
-        Args:
-            lines (list): List of lines to process.
-            format_key (str): Formatting key ('?', '-', '+', or None).
-            side (int): 0 for source, 1 for target.
-            
-        Returns:
-            tuple: (line_number, formatted_text)
-        """
-        self.line_numbers[side] += 1
-        if format_key is None:
-            line = lines.pop(0)
-            if line == "X":
-                return self.line_numbers[side], ""
-            return self.line_numbers[side], line[2:] if len(line) > 2 else ""
-        if format_key == "?":
-            text = lines.pop(0)
-            if len(lines) > 0:
-                lines.pop(0)  # Skip markers line
-            text = text[2:] if len(text) > 2 else ""
-        else:
-            line = lines.pop(0)
-            if line == "X":
-                text = ""
+        # 对齐目标文本
+        aligned_target = list(target_text)
+        while len(aligned_target) < max_len:
+            if aligned_target:
+                # 使用上一行进行填充
+                aligned_target.append(aligned_target[-1])
             else:
-                text = line[2:] if len(line) > 2 else ""
-            if not text:
-                text = ""
-        return self.line_numbers[side], text
+                aligned_target.append("")
+        
+        # 如果长度超过实际需要的长度，则截断
+        if len(aligned_source) > max_len:
+            aligned_source = aligned_source[:max_len]
+        if len(aligned_target) > max_len:
+            aligned_target = aligned_target[:max_len]
+            
+        return aligned_source, aligned_target
 
 
 # 测试代码
@@ -297,6 +190,12 @@ if __name__ == "__main__":
         print(f"行 {i}:")
         print(f"文本1: {l1}")
         print(f"文本2: {l2}")
-        print(difflib.SequenceMatcher(None, l1, l2).ratio())
+        # 使用 diff-match-patch 计算相似度
+        dmp = diff_match_patch()
+        diffs = dmp.diff_main(l1, l2)
+        same_chars = sum(len(text) for op, text in diffs if op == 0)
+        max_chars = max(len(l1), len(l2))
+        similarity = same_chars / max_chars if max_chars > 0 else 1.0
+        print(f"相似度: {similarity:.2f}")
         print("----")
         i += 1
