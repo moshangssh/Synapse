@@ -1,15 +1,29 @@
 import { create } from 'zustand';
 
+interface ApiConfig {
+  endpoint: string;
+  apiKey: string;
+}
+
 interface SettingsState {
   theme: 'light' | 'dark';
   fillerWords: string[];
+  apiConfig: ApiConfig;
   loadFillerWords: () => Promise<void>;
   toggleTheme: () => void;
+  updateApiConfig: (config: Partial<ApiConfig>) => void;
+  loadApiConfig: () => void;
+  saveApiConfig: () => void;
+  validateApiEndpoint: (endpoint: string) => boolean;
 }
 
-export const useSettingsStore = create<SettingsState>((set) => ({
+export const useSettingsStore = create<SettingsState>((set, get) => ({
   theme: 'dark', // Default to dark theme
   fillerWords: [],
+  apiConfig: {
+    endpoint: '',
+    apiKey: '',
+  },
   loadFillerWords: async () => {
     try {
       // Note: In a real app, you might want to fetch this from a static asset endpoint
@@ -29,4 +43,40 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     }
   },
   toggleTheme: () => set((state) => ({ theme: state.theme === 'dark' ? 'light' : 'dark' })),
+  updateApiConfig: (config: Partial<ApiConfig>) => {
+    set((state) => ({
+      apiConfig: { ...state.apiConfig, ...config }
+    }));
+  },
+  loadApiConfig: () => {
+    try {
+      const savedConfig = localStorage.getItem('apiConfig');
+      if (savedConfig) {
+        const config = JSON.parse(savedConfig);
+        set({ apiConfig: config });
+      }
+    } catch (error) {
+      console.error('Error loading API config from localStorage:', error);
+    }
+  },
+  saveApiConfig: () => {
+    try {
+      const { apiConfig } = get();
+      localStorage.setItem('apiConfig', JSON.stringify(apiConfig));
+    } catch (error) {
+      console.error('Error saving API config to localStorage:', error);
+      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+        throw new Error('Local storage quota exceeded. Please clear some data or reduce the API key size.');
+      }
+      throw error;
+    }
+  },
+  validateApiEndpoint: (endpoint: string) => {
+    try {
+      new URL(endpoint);
+      return true;
+    } catch {
+      return false;
+    }
+  },
 }));

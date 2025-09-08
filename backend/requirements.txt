@@ -3,3 +3,8 @@ uvicorn[standard]
 pytest
 Timecode
 diff-match-patch
+aiohttp
+httpx
+pydantic
+pydantic-settings
+python-dotenv

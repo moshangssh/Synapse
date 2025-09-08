@@ -128,5 +128,47 @@ class DiffResponse(BaseModel):
     status: str = "success"
     data: List[DiffPartModel]
 
+# --- Models for LLM Optimizer ---
+
+class OptimizationRequest(BaseModel):
+    subtitles: List[SubtitleItem] = Field(..., description="要优化的字幕列表")
+    reference_info: Optional[str] = Field(None, description="可选的参考信息")
+    batch_size: Optional[int] = Field(10, description="批次大小，默认为10")
+    model: Optional[str] = Field("gpt-3.5-turbo", description="使用的LLM模型")
+    temperature: Optional[float] = Field(0.7, description="模型温度参数")
+    max_tokens: Optional[int] = Field(2000, description="最大令牌数")
+
+class OptimizedSubtitleItem(BaseModel):
+    id: int
+    original_text: str
+    optimized_text: str
+    diffs: List[DiffPartModel]
+
+class OptimizationResponse(BaseModel):
+    status: str = "success"
+    data: List[OptimizedSubtitleItem]
+    metadata: Dict[str, Any] = Field(..., example={
+        "total_subtitles": 10,
+        "batches_processed": 1,
+        "cache_hits": 0,
+        "processing_time": 2.5,
+        "model_used": "gpt-3.5-turbo"
+    })
+
+class LLMConfiguration(BaseModel):
+    api_key: str = Field(..., description="LLM API密钥")
+    endpoint: str = Field(..., description="LLM API端点")
+    model: str = Field("gpt-3.5-turbo", description="默认模型")
+    timeout: int = Field(30, description="请求超时时间（秒）")
+    max_retries: int = Field(3, description="最大重试次数")
+
+class OptimizationErrorCode(str, Enum):
+    INVALID_REQUEST = "invalid_request"
+    LLM_API_ERROR = "llm_api_error"
+    TIMEOUT_ERROR = "timeout_error"
+    RATE_LIMIT_ERROR = "rate_limit_error"
+    CONFIGURATION_ERROR = "configuration_error"
+    PROCESSING_ERROR = "processing_error"
+
 # 为DiffPartModel添加别名，以保持向后兼容性
 DiffPart = DiffPartModel
