@@ -12,11 +12,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from main import app
 from routers.optimizer import (
     split_into_batches,
-    build_system_prompt,
     build_json_input,
     generate_cache_key,
     process_batch
 )
+from prompt import get_system_prompt
 from schemas import (
     SubtitleItem,
     OptimizationRequest,
@@ -61,16 +61,16 @@ class TestOptimizerRouter:
         assert len(batches) == 1
         assert len(batches[0]) == 5
     
-    def test_build_system_prompt(self):
-        """测试系统提示构建"""
+    def test_get_system_prompt(self):
+        """测试系统提示获取"""
         # 无参考信息
-        prompt = build_system_prompt()
-        assert "你是一个专业的字幕优化助手" in prompt
-        assert "优化原则" in prompt
+        prompt = get_system_prompt()
+        assert "You are a subtitle correction expert" in prompt
+        assert "Correction Rules" in prompt
         
         # 有参考信息
-        prompt = build_system_prompt("这是一部科幻电影")
-        assert "这是一部科幻电影" in prompt
+        prompt = get_system_prompt("This is a science fiction movie")
+        assert "This is a science fiction movie" in prompt
     
     def test_build_json_input(self):
         """测试JSON输入构建"""

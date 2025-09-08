@@ -104,6 +104,11 @@ pytest tests/test_davinci_connector.py -v
 - 使用 `timecode_utils.py` 进行时间码转换
 - 支持 SMPTE 格式和帧数格式
 
+### 6. 智能字幕对齐
+- 使用 `intelligent_aligner.py` 实现基于difflib的智能文本对齐
+- 当源字幕和优化字幕数量不匹配时，自动进行智能填充
+- 集成在 `subtitle_aligner.py` 中，通过 `create_intelligent_alignment` 方法调用
+
 ## 测试策略
 
 ### 前端测试

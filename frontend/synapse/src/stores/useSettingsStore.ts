@@ -3,6 +3,10 @@ import { create } from 'zustand';
 interface ApiConfig {
   endpoint: string;
   apiKey: string;
+  model: string;
+  temperature: number;
+  maxTokens: number;
+  batchSize: number;
 }
 
 interface SettingsState {
@@ -23,6 +27,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   apiConfig: {
     endpoint: '',
     apiKey: '',
+    model: 'gpt-4o-mini',
+    temperature: 0.7,
+    maxTokens: 2000,
+    batchSize: 10,
   },
   loadFillerWords: async () => {
     try {

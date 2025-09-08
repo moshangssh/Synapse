@@ -8,8 +8,9 @@ import {
   Alert,
   InputAdornment,
   IconButton,
+  Slider,
 } from '@mui/material';
-import { Visibility, VisibilityOff } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
 import { useSettingsStore } from '../stores/useSettingsStore';
 
@@ -81,24 +82,32 @@ export function ApiSettingsModal({ open, onClose }: ApiSettingsModalProps) {
     setTestResult(null);
 
     try {
-      const response = await fetch(`${localConfig.endpoint}/health`, {
-        method: 'GET',
+      // 测试 LLM API 连接 - 发送一个简单的测试请求
+      const testResponse = await fetch(localConfig.endpoint, {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${localConfig.apiKey}`,
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          model: localConfig.model,
+          messages: [{ role: 'user', content: 'Hello' }],
+          max_tokens: 5,
+          temperature: 0.1
+        }),
         signal: AbortSignal.timeout(10000), // 10 second timeout
       });
 
-      if (response.ok) {
+      if (testResponse.ok) {
         setTestResult({
           success: true,
-          message: 'Connection successful! API is responding.'
+          message: 'Connection successful! LLM API is responding.'
         });
       } else {
+        const errorText = await testResponse.text();
         setTestResult({
           success: false,
-          message: `Connection failed: ${response.status} ${response.statusText}`
+          message: `Connection failed: ${testResponse.status} ${testResponse.statusText} - ${errorText.substring(0, 100)}`
         });
       }
     } catch (error) {
@@ -109,6 +118,8 @@ export function ApiSettingsModal({ open, onClose }: ApiSettingsModalProps) {
           message = 'Connection timeout. Please check if the API endpoint is accessible.';
         } else if (error.message.includes('Failed to fetch')) {
           message = 'Network error. Please check if the API endpoint is correct and accessible.';
+        } else if (error.message.includes('CORS')) {
+          message = 'CORS error. Please check if the API allows cross-origin requests.';
         } else {
           message = `Connection failed: ${error.message}`;
         }
@@ -199,7 +210,7 @@ export function ApiSettingsModal({ open, onClose }: ApiSettingsModalProps) {
                     edge="end"
                     sx={{ color: '#B0B0B0' }}
                   >
-                    {showApiKey ? <VisibilityOff size={20} /> : <Visibility size={20} />}
+                    {showApiKey ? <EyeOff size={20} /> : <Eye size={20} />}
                   </IconButton>
                 </InputAdornment>
               ),
@@ -215,6 +226,104 @@ export function ApiSettingsModal({ open, onClose }: ApiSettingsModalProps) {
               '& .MuiFormHelperText-root': { color: '#FF6B6B' },
             }}
           />
+
+          {/* AI 模型输入 */}
+          <TextField
+            label="AI Model"
+            value={localConfig.model}
+            onChange={(e) => setLocalConfig(prev => ({ ...prev, model: e.target.value }))}
+            fullWidth
+            placeholder="e.g., gpt-3.5-turbo, gpt-4, claude-3-sonnet"
+            helperText="Enter the model name (e.g., gpt-3.5-turbo, gpt-4, claude-3-sonnet)"
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                color: '#FFFFFF',
+                '& fieldset': { borderColor: '#404040' },
+                '&:hover fieldset': { borderColor: '#606060' },
+                '&.Mui-focused fieldset': { borderColor: '#90CAF9' },
+              },
+              '& .MuiInputLabel-root': { color: '#B0B0B0' },
+              '& .MuiFormHelperText-root': { color: '#B0B0B0' },
+            }}
+          />
+
+          {/* 温度设置 */}
+          <Box>
+            <Typography variant="body2" sx={{ color: '#B0B0B0', mb: 1 }}>
+              Temperature: {localConfig.temperature}
+            </Typography>
+            <Slider
+              value={localConfig.temperature}
+              onChange={(_, value) => setLocalConfig(prev => ({ ...prev, temperature: value as number }))}
+              min={0}
+              max={2}
+              step={0.1}
+              sx={{
+                color: '#90CAF9',
+                '& .MuiSlider-thumb': {
+                  backgroundColor: '#90CAF9',
+                },
+                '& .MuiSlider-track': {
+                  backgroundColor: '#90CAF9',
+                },
+                '& .MuiSlider-rail': {
+                  backgroundColor: '#404040',
+                },
+              }}
+            />
+          </Box>
+
+          {/* 最大令牌数设置 */}
+          <Box>
+            <Typography variant="body2" sx={{ color: '#B0B0B0', mb: 1 }}>
+              Max Tokens: {localConfig.maxTokens}
+            </Typography>
+            <Slider
+              value={localConfig.maxTokens}
+              onChange={(_, value) => setLocalConfig(prev => ({ ...prev, maxTokens: value as number }))}
+              min={100}
+              max={4000}
+              step={100}
+              sx={{
+                color: '#90CAF9',
+                '& .MuiSlider-thumb': {
+                  backgroundColor: '#90CAF9',
+                },
+                '& .MuiSlider-track': {
+                  backgroundColor: '#90CAF9',
+                },
+                '& .MuiSlider-rail': {
+                  backgroundColor: '#404040',
+                },
+              }}
+            />
+          </Box>
+
+          {/* 批处理大小设置 */}
+          <Box>
+            <Typography variant="body2" sx={{ color: '#B0B0B0', mb: 1 }}>
+              Batch Size: {localConfig.batchSize}
+            </Typography>
+            <Slider
+              value={localConfig.batchSize}
+              onChange={(_, value) => setLocalConfig(prev => ({ ...prev, batchSize: value as number }))}
+              min={1}
+              max={20}
+              step={1}
+              sx={{
+                color: '#90CAF9',
+                '& .MuiSlider-thumb': {
+                  backgroundColor: '#90CAF9',
+                },
+                '& .MuiSlider-track': {
+                  backgroundColor: '#90CAF9',
+                },
+                '& .MuiSlider-rail': {
+                  backgroundColor: '#404040',
+                },
+              }}
+            />
+          </Box>
 
           {testResult && (
             <Alert

@@ -90,3 +90,43 @@ export interface ApiError {
   /** 错误码（可选） */
   code?: string;
 }
+
+/**
+ * 优化请求接口
+ */
+export interface OptimizationRequest {
+  subtitles: Array<{
+    id: number;
+    text: string;
+  }>;
+  reference_info?: string;
+  batch_size?: number;
+  model?: string;
+  temperature?: number;
+  max_tokens?: number;
+  api_key?: string;
+  endpoint?: string;
+}
+
+/**
+ * 优化响应接口
+ */
+export interface OptimizationResponse {
+  data: Array<{
+    id: number;
+    original_text: string;
+    optimized_text: string;
+    diffs: Array<{
+      type: 'add' | 'remove' | 'normal';
+      value: string;
+    }>;
+  }>;
+  metadata: {
+    processing_time: number;
+    cache_stats: {
+      cache_hits: number;
+      cache_misses: number;
+    };
+    error_count: number;
+  };
+}

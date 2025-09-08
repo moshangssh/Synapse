@@ -17,3 +17,7 @@ export { importSrtFile } from './importService';
 
 // 时间线服务
 export { setTimecode } from './timelineService';
+
+// 优化服务
+export { optimizationService } from './optimizationService';
+export type { OptimizationRequest, OptimizationResponse } from './optimizationService';

@@ -142,42 +142,73 @@ class LLMClient:
         """带重试的请求"""
         last_error = None
         
+        logger.info(f"=== LLM HTTP 请求开始 ===")
+        logger.info(f"请求URL: {url}")
+        logger.info(f"请求方法: POST")
+        logger.info(f"请求模型: {self.config.model}")
+        logger.info(f"请求超时: {self.config.timeout}秒")
+        logger.info(f"最大重试次数: {self.config.max_retries}")
+        logger.info(f"请求数据大小: {len(json.dumps(data))} 字符")
+        
         for attempt in range(self.config.max_retries):
+            attempt_start_time = time.time()
+            logger.info(f"=== 尝试 {attempt + 1}/{self.config.max_retries} ===")
+            
             try:
                 start_time = time.time()
                 
                 async with self.session.post(url, json=data) as response:
+                    response_time = time.time() - start_time
+                    logger.info(f"HTTP响应时间: {response_time:.2f}秒")
+                    logger.info(f"HTTP状态码: {response.status}")
+                    
                     if response.status == 200:
                         response_data = await response.json()
+                        logger.info(f"响应数据大小: {len(json.dumps(response_data))} 字符")
                         llm_response = self._parse_response(response_data)
                         llm_response.latency = time.time() - start_time
+                        logger.info(f"LLM响应解析成功，延迟: {llm_response.latency:.2f}秒")
                         return llm_response
                     elif response.status == 429:
                         # 速率限制
                         retry_after = int(response.headers.get("Retry-After", 5))
                         logger.warning(f"速率限制，等待 {retry_after} 秒后重试")
+                        logger.warning(f"响应头: {dict(response.headers)}")
                         await asyncio.sleep(retry_after)
                         continue
                     else:
                         error_text = await response.text()
+                        logger.error(f"HTTP错误 {response.status}: {error_text}")
+                        logger.error(f"响应头: {dict(response.headers)}")
                         raise Exception(f"HTTP {response.status}: {error_text}")
                         
             except asyncio.TimeoutError:
                 last_error = "请求超时"
-                logger.warning(f"请求超时 (尝试 {attempt + 1}/{self.config.max_retries})")
+                attempt_time = time.time() - attempt_start_time
+                logger.warning(f"请求超时 (尝试 {attempt + 1}/{self.config.max_retries})，耗时: {attempt_time:.2f}秒")
             except aiohttp.ClientError as e:
                 last_error = f"连接错误: {str(e)}"
-                logger.warning(f"连接错误 (尝试 {attempt + 1}/{self.config.max_retries}): {e}")
+                attempt_time = time.time() - attempt_start_time
+                logger.warning(f"连接错误 (尝试 {attempt + 1}/{self.config.max_retries}): {e}，耗时: {attempt_time:.2f}秒")
+                logger.warning(f"连接错误类型: {type(e).__name__}")
             except Exception as e:
                 last_error = f"请求失败: {str(e)}"
-                logger.warning(f"请求失败 (尝试 {attempt + 1}/{self.config.max_retries}): {e}")
+                attempt_time = time.time() - attempt_start_time
+                logger.warning(f"请求失败 (尝试 {attempt + 1}/{self.config.max_retries}): {e}，耗时: {attempt_time:.2f}秒")
+                logger.warning(f"错误类型: {type(e).__name__}")
             
             if attempt < self.config.max_retries - 1:
                 # 指数退避
                 wait_time = min(2 ** attempt, 10)
+                logger.info(f"等待 {wait_time} 秒后重试...")
                 await asyncio.sleep(wait_time)
         
         # 所有重试都失败了
+        total_time = time.time() - attempt_start_time
+        logger.error(f"=== 所有重试失败 ===")
+        logger.error(f"总尝试时间: {total_time:.2f}秒")
+        logger.error(f"最后错误: {last_error or '未知错误'}")
+        
         return LLMResponse(
             content="",
             model=self.config.model,

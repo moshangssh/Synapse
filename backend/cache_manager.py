@@ -114,7 +114,7 @@ class CacheManager:
                 'max_size': self.max_size,
                 'hits': self.stats['hits'],
                 'misses': self.stats['misses'],
-                'hit_rate': f"{hit_rate:.2f}%",
+                'hit_rate': round(hit_rate, 2),
                 'evictions': self.stats['evictions'],
                 'expirations': self.stats['expirations'],
                 'entries': [
