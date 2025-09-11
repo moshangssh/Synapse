@@ -6,6 +6,7 @@ import os
 from typing import Optional, Dict, Any
 from functools import lru_cache
 import logging
+from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +14,8 @@ logger = logging.getLogger(__name__)
 class Config:
     """简单配置类"""
     def __init__(self):
+        # 加载 .env 文件
+        load_dotenv()
         self.load_env()
     
     def load_env(self):

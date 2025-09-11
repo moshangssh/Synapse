@@ -180,3 +180,45 @@ def validate_srt_content(content: str, strict: bool = True) -> Dict[str, Any]:
     else:
         # 在非严格模式下，只要有一个有效的字幕块就认为文件有效
         return {"isValid": valid_blocks > 0, "errors": errors, "validBlocks": valid_blocks}
+
+
+def is_valid_srt_format(content: str) -> bool:
+    """
+    检查内容是否为有效的SRT格式
+    Args:
+        content: 文件内容
+    Returns:
+        是否为有效的SRT格式
+    """
+    # 检查是否为空
+    if not content or content.strip() == '':
+        return False
+    
+    # 移除BOM标记（如果存在）
+    clean_content = content.replace('\uFEFF', '')
+    
+    # 检查基本的SRT格式特征
+    if '-->' not in clean_content:
+        return False
+    
+    # 按双换行符分割字幕块
+    blocks = re.split(r'\n\s*\n', clean_content.strip())
+    blocks = [block for block in blocks if block.strip()]
+    
+    if len(blocks) == 0:
+        return False
+    
+    # 检查每个块是否包含有效的时间码
+    valid_blocks = 0
+    for block in blocks:
+        lines = [line.strip() for line in block.strip().split('\n') if line.strip()]
+        
+        # 查找时间码行
+        for line in lines:
+            # 检查是否符合标准SRT时间码格式（包含毫秒）
+            if re.match(r'^\d{2}:\d{2}:\d{2}[,.]\d{3}\s*-->\s*\d{2}:\d{2}:\d{2}[,.]\d{3}$', line.strip()):
+                valid_blocks += 1
+                break
+    
+    # 如果至少有一个有效的字幕块，则认为是SRT格式
+    return valid_blocks > 0

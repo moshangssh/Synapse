@@ -24,6 +24,7 @@ dist-ssr
 *.sln
 *.sw?
 env
+.env
 
 # Environment variables
 .env.local
@@ -37,3 +38,4 @@ teams/
 .roomdes
 backend_code.xml
 frontend_code.xml
+backend/.env

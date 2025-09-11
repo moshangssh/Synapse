@@ -5,6 +5,7 @@ import { useConnectionStore } from '../stores/useConnectionStore';
 import { convertSrtToSubtitles } from '../utils/converter';
 import useNotifier from './useNotifier';
 import { importSrtFile } from '../services/importService';
+import { isValidSrtFormat } from '../utils/srtValidator';
 
 /**
  * 自定义Hook，用于封装SRT文件导入逻辑
@@ -44,6 +45,14 @@ export const useSrtImporter = () => {
 
       const content = await file.text();
       
+      // 检查文件内容是否为有效的SRT格式
+      if (!isValidSrtFormat(content)) {
+        const errorMessage = '导入的并不是规范的SRT文件，请检查里面的内容';
+        setImportError(errorMessage);
+        notify.error(errorMessage);
+        return;
+      }
+      
       // 调用后端API进行SRT文件解析
       const importedFile = await importSrtFile(content, file.name);
 
@@ -63,9 +72,15 @@ export const useSrtImporter = () => {
       setConnectionStatus('standalone');
       
       notify.success(`成功导入 ${importedFile.subtitles.length} 条字幕`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('导入SRT文件时发生错误:', error);
-      const errorMessage = '导入SRT文件时发生错误';
+      let errorMessage = '导入SRT文件时发生错误';
+      
+      // 如果是后端返回的错误信息，显示具体的错误
+      if (error.message) {
+        errorMessage = error.message;
+      }
+      
       setImportError(errorMessage);
       notify.error(errorMessage);
     } finally {

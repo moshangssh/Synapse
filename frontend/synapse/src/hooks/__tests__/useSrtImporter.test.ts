@@ -109,7 +109,7 @@ describe('useSrtImporter', () => {
         await result.current.handleFileChange(mockEvent);
       });
 
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:8000/api/v1/import/srt', {
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:8000/api/v1/subtitles/import/srt', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -180,7 +180,7 @@ describe('useSrtImporter', () => {
 
       const { result } = renderHook(() => useSrtImporter());
       
-      const file = new File([''], 'empty.srt', {
+      const file = new File(['1\n00:00:01,000 --> 00:00:03,000\nTest subtitle'], 'test.srt', {
         type: 'text/plain'
       });
       
@@ -198,6 +198,26 @@ describe('useSrtImporter', () => {
       
       // Restore global fetch
       vi.unstubAllGlobals();
+    });
+
+    it('should handle invalid SRT format content', async () => {
+      const { result } = renderHook(() => useSrtImporter());
+      
+      const file = new File(['这不是有效的SRT文件内容'], 'invalid.srt', {
+        type: 'text/plain'
+      });
+      
+      const mockEvent = {
+        target: {
+          files: [file]
+        }
+      } as unknown as React.ChangeEvent<HTMLInputElement>;
+
+      await act(async () => {
+        await result.current.handleFileChange(mockEvent);
+      });
+
+      expect(mockNotify.error).toHaveBeenCalledWith('导入的并不是规范的SRT文件，请检查里面的内容');
     });
 
     it('should handle network error', async () => {
@@ -221,7 +241,7 @@ describe('useSrtImporter', () => {
         await result.current.handleFileChange(mockEvent);
       });
 
-      expect(mockNotify.error).toHaveBeenCalledWith('导入SRT文件时发生错误');
+      expect(mockNotify.error).toHaveBeenCalledWith('Network error');
       
       // Restore global fetch
       vi.unstubAllGlobals();

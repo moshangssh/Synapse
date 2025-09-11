@@ -22,6 +22,9 @@ export const API_ENDPOINTS = {
   
   // 工具相关
   UTILS_DIFF: '/api/v1/utils/diff',
+  
+  // 优化相关
+  OPTIMIZER_OPTIMIZE: '/api/v1/optimizer/optimize',
 } as const;
 
 // HTTP方法

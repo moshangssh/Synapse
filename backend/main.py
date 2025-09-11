@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Union
 import logging
 
+logger = logging.getLogger(__name__)
+
 from davinci_api import get_resolve_subtitles, set_resolve_timecode, export_to_davinci, get_resolve_project_info, get_subtitle_tracks
 from srt_utils import generate_srt_content
 from srt_parser import parse_srt_file, validate_srt_content
@@ -59,6 +61,8 @@ app.include_router(optimizer.router)
 
 # CORS (Cross-Origin Resource Sharing) 中间件配置
 origins = get_cors_origins()
+# 添加这行日志
+logger.info(f"CORS origins allowed: {origins}")
 
 app.add_middleware(
     CORSMiddleware,

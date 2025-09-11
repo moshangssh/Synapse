@@ -46,10 +46,29 @@ export function MainLayout() {
   const setErrorMessage = useConnectionStore((state) => state.setErrorMessage);
   const currentErrorMessage = useConnectionStore((state) => state.errorMessage);
   const { exportToSrt, exportToDavinci } = useExport();
+  
+  // 初始化配置
+  const loadApiConfig = useSettingsStore((state) => state.loadApiConfig);
+  const isDevelopmentMode = useSettingsStore((state) => state.isDevelopmentMode);
+  const applyPreset = useSettingsStore((state) => state.applyPreset);
 
   const [loading, setLoading] = useState(false);
   const [jumpToSubtitleId, setJumpToSubtitleId] = useState<number | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // 初始化配置 - 只在组件挂载时执行一次
+  useEffect(() => {
+    // 加载保存的 API 配置
+    loadApiConfig();
+    
+    // 如果是开发模式且没有保存的配置，应用本地预设
+    if (isDevelopmentMode()) {
+      const savedConfig = localStorage.getItem('apiConfig');
+      if (!savedConfig) {
+        applyPreset('local');
+      }
+    }
+  }, [loadApiConfig, isDevelopmentMode, applyPreset]);
 
   const fetchSubtitles = useCallback(async (trackIndex: number = 1) => {
     if (abortControllerRef.current) {

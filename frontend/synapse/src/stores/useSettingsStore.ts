@@ -3,7 +3,38 @@ import { create } from 'zustand';
 interface ApiConfig {
   endpoint: string;
   apiKey: string;
+  model: string;
+  temperature: number;
+  maxTokens: number;
+  batchSize: number;
 }
+
+// 开发环境预设配置
+const DEVELOPMENT_PRESETS = {
+  openai: {
+    endpoint: 'https://api.openai.com/v1/chat/completions',
+    model: 'gpt-4o-mini',
+    temperature: 0.7,
+    maxTokens: 2000,
+    batchSize: 10,
+  },
+  anthropic: {
+    endpoint: 'https://api.anthropic.com/v1/messages',
+    model: 'claude-3-sonnet-20240229',
+    temperature: 0.7,
+    maxTokens: 2000,
+    batchSize: 10,
+  },
+  local: {
+    endpoint: 'http://localhost:8080/v1/chat/completions',
+    model: 'GLM-4.5',
+    temperature: 0.7,
+    maxTokens: 2000,
+    batchSize: 10,
+  },
+} as const;
+
+type PresetType = keyof typeof DEVELOPMENT_PRESETS;
 
 interface SettingsState {
   theme: 'light' | 'dark';
@@ -15,6 +46,9 @@ interface SettingsState {
   loadApiConfig: () => void;
   saveApiConfig: () => void;
   validateApiEndpoint: (endpoint: string) => boolean;
+  applyPreset: (presetType: PresetType) => void;
+  getAvailablePresets: () => Array<{ key: PresetType; name: string; description: string }>;
+  isDevelopmentMode: () => boolean;
 }
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
@@ -23,6 +57,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   apiConfig: {
     endpoint: '',
     apiKey: '',
+    model: 'gpt-4o-mini',
+    temperature: 0.7,
+    maxTokens: 2000,
+    batchSize: 10,
   },
   loadFillerWords: async () => {
     try {
@@ -78,5 +116,33 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     } catch {
       return false;
     }
+  },
+  applyPreset: (presetType: PresetType) => {
+    const preset = DEVELOPMENT_PRESETS[presetType];
+    set((state) => ({
+      apiConfig: { ...state.apiConfig, ...preset }
+    }));
+  },
+  getAvailablePresets: () => {
+    return [
+      {
+        key: 'openai',
+        name: 'OpenAI',
+        description: 'OpenAI GPT-4 API 配置'
+      },
+      {
+        key: 'anthropic',
+        name: 'Anthropic',
+        description: 'Anthropic Claude 3 API 配置'
+      },
+      {
+        key: 'local',
+        name: 'Local Server',
+        description: '本地开发服务器配置'
+      }
+    ];
+  },
+  isDevelopmentMode: () => {
+    return import.meta.env.DEV || import.meta.env.MODE === 'development';
   },
 }));

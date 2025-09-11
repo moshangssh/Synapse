@@ -297,6 +297,162 @@ class TestSubtitleAligner:
         assert result.processing_time < 1.0
         # 整体测试时间也应该合理
         assert (end_time - start_time) < 2.0
+    
+    def test_calculate_diffs_no_change(self):
+        """测试无变化时的差异计算"""
+        original_text = "Hello world"
+        optimized_text = "Hello world"
+        
+        diffs = self.aligner._calculate_diffs(original_text, optimized_text)
+        
+        assert len(diffs) == 1
+        assert diffs[0].type == "normal"
+        assert diffs[0].value == "Hello world"
+    
+    def test_calculate_diffs_added_text(self):
+        """测试添加文本的差异计算"""
+        original_text = "Hello world"
+        optimized_text = "Hello beautiful world"
+        
+        diffs = self.aligner._calculate_diffs(original_text, optimized_text)
+        
+        # 应该包含 normal、added、normal 三部分
+        assert len(diffs) == 3
+        
+        # 验证差异部分
+        found_added = False
+        found_hello = False
+        found_world = False
+        
+        for diff in diffs:
+            if diff.type == "added":
+                assert diff.value == "beautiful "
+                found_added = True
+            elif diff.type == "normal":
+                if diff.value == "Hello ":
+                    found_hello = True
+                elif diff.value == "world":
+                    found_world = True
+        
+        assert found_added
+        assert found_hello
+        assert found_world
+    
+    def test_calculate_diffs_removed_text(self):
+        """测试删除文本的差异计算"""
+        original_text = "Hello beautiful world"
+        optimized_text = "Hello world"
+        
+        diffs = self.aligner._calculate_diffs(original_text, optimized_text)
+        
+        # 应该包含 normal、removed、normal 三部分
+        assert len(diffs) == 3
+        
+        # 验证差异部分
+        found_removed = False
+        found_hello = False
+        found_world = False
+        
+        for diff in diffs:
+            if diff.type == "removed":
+                assert diff.value == "beautiful "
+                found_removed = True
+            elif diff.type == "normal":
+                if diff.value == "Hello ":
+                    found_hello = True
+                elif diff.value == "world":
+                    found_world = True
+        
+        assert found_removed
+        assert found_hello
+        assert found_world
+    
+    def test_calculate_diffs_mixed_changes(self):
+        """测试混合变化的差异计算"""
+        original_text = "The quick brown fox"
+        optimized_text = "The fast brown dog"
+        
+        diffs = self.aligner._calculate_diffs(original_text, optimized_text)
+        
+        # 应该包含多种类型的差异
+        assert len(diffs) >= 3
+        
+        # 验证包含各种类型的变化
+        types = [diff.type for diff in diffs]
+        assert "normal" in types
+        assert "removed" in types
+        assert "added" in types
+    
+    def test_calculate_diffs_punctuation_only(self):
+        """测试仅标点符号变化的差异计算"""
+        original_text = "Hello world"
+        optimized_text = "Hello, world!"
+        
+        diffs = self.aligner._calculate_diffs(original_text, optimized_text)
+        
+        # 应该能检测到标点符号的细微变化
+        assert len(diffs) >= 1
+        
+        # 验证包含添加的标点符号
+        found_added = False
+        for diff in diffs:
+            if diff.type == "added":
+                if diff.value in [",", "!"]:
+                    found_added = True
+        
+        assert found_added
+    
+    def test_calculate_diffs_empty_strings(self):
+        """测试空字符串的差异计算"""
+        original_text = ""
+        optimized_text = ""
+        
+        diffs = self.aligner._calculate_diffs(original_text, optimized_text)
+        
+        assert len(diffs) == 1
+        assert diffs[0].type == "normal"
+        assert diffs[0].value == ""
+    
+    def test_calculate_diffs_unicode_text(self):
+        """测试Unicode文本的差异计算"""
+        original_text = "你好世界"
+        optimized_text = "你好美丽的世界"
+        
+        diffs = self.aligner._calculate_diffs(original_text, optimized_text)
+        
+        # 应该能正确处理Unicode字符
+        assert len(diffs) >= 2
+        
+        # 验证包含添加的文本
+        found_added = False
+        for diff in diffs:
+            if diff.type == "added":
+                if "美丽" in diff.value:
+                    found_added = True
+        
+        assert found_added
+    
+    def test_calculate_diffs_complex_replacement(self):
+        """测试复杂替换的差异计算"""
+        original_text = "The quick brown fox jumps over the lazy dog"
+        optimized_text = "A fast brown dog leaps over the sleeping cat"
+        
+        diffs = self.aligner._calculate_diffs(original_text, optimized_text)
+        
+        # 应该包含变化（可能是细粒度或粗粒度）
+        assert len(diffs) >= 1
+        
+        # 验证包含各种类型的变化
+        types = [diff.type for diff in diffs]
+        assert "removed" in types
+        assert "added" in types
+        
+        # 验证文本确实发生了变化
+        removed_text = "".join([diff.value for diff in diffs if diff.type == "removed"])
+        added_text = "".join([diff.value for diff in diffs if diff.type == "added"])
+        
+        assert original_text in removed_text or removed_text in original_text
+        assert optimized_text in added_text or added_text in optimized_text
 
 
 if __name__ == "__main__":

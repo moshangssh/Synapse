@@ -130,13 +130,19 @@ class DiffResponse(BaseModel):
 
 # --- Models for LLM Optimizer ---
 
+class SimpleSubtitleItem(BaseModel):
+    id: int
+    text: str
+
 class OptimizationRequest(BaseModel):
-    subtitles: List[SubtitleItem] = Field(..., description="要优化的字幕列表")
+    subtitles: List[SimpleSubtitleItem] = Field(..., description="要优化的字幕列表")
     reference_info: Optional[str] = Field(None, description="可选的参考信息")
     batch_size: Optional[int] = Field(10, description="批次大小，默认为10")
     model: Optional[str] = Field("gpt-3.5-turbo", description="使用的LLM模型")
     temperature: Optional[float] = Field(0.7, description="模型温度参数")
     max_tokens: Optional[int] = Field(2000, description="最大令牌数")
+    api_key: Optional[str] = Field(None, description="可选的API密钥")
+    endpoint: Optional[str] = Field(None, description="可选的API端点")
 
 class OptimizedSubtitleItem(BaseModel):
     id: int
