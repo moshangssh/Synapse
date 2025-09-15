@@ -1,4 +1,4 @@
-import { Box, Typography, Paper, useTheme } from '@mui/material';
+import { Box, Typography, Paper } from '@mui/material';
 import { Circle } from 'lucide-react';
 import { useMemo } from 'react';
 
@@ -9,7 +9,6 @@ import { useUIStore } from '../../stores/useUIStore';
 import { JumpModeSelector } from './JumpModeSelector';
 
 export function StatusBar() {
-  const theme = useTheme();
   const selectedSubtitleId = useUIStore((state) => state.selectedSubtitleId);
   const connectionStatus = useConnectionStore((state) => state.connectionStatus);
   const errorMessage = useConnectionStore((state) => state.errorMessage);

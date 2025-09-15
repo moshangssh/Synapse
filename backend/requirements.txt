@@ -8,3 +8,4 @@ httpx
 pydantic
 pydantic-settings
 python-dotenv
+json-repair

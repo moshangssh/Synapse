@@ -1,87 +1,93 @@
-### **故事标题**
+### 警告 1 & 2: 动态导入和静态导入混合使用
 
-修复“结果审阅”弹窗中的差异对比显示功能 - Brownfield修正
+- **警告信息**:
+  `.../useSubtitleStore.ts is dynamically imported by .../ResultReviewModal.tsx but also statically imported by ...`
+  `.../useSettingsStore.ts is dynamically imported by .../optimizationService.ts but also statically imported by ...`
 
-### **用户故事**
+- **含义**:
+  - **静态导入 (`import ... from '...'`)**: 这是最常见的导入方式。在构建时，Vite 会将所有静态导入的模块打包到同一个代码块（chunk）中。
+  - **动态导入 (`import(...)`)**: 这是一个函数，它会返回一个 Promise。Vite 会将动态导入的模块分离成一个独立的代码块，只有在代码执行到 `import()` 时才会通过网络加载它。这是一种优化技术，叫做**代码分割 (Code Splitting)**。
 
-**作为** 一名编辑用户，
-**我希望** 在“结果审阅”弹窗的“差异对比”区域看到原始文本和优化后文本之间清晰、内联且带有颜色高亮的差异，
-**以便于** 我能快速、准确地评估AI优化的质量，并决定是否应用这些变更。
+  这个警告的意思是，您在代码的某个地方使用了动态导入 (`await import(...)`) 来加载一个 store 文件，但在其他很多地方又使用了常规的静态导入。Vite 告诉你：“你似乎想把这个 store 文件拆分成独立的代码块，但由于其他地方已经静态导入了它，我只能把它打包进主代码块里。动态导入的优化效果无法实现。”
 
-### **验收标准 (Acceptance Criteria)**
+- **问题定位**:
+  - `ResultReviewModal.tsx` 中有一行 `const { useSubtitleStore } = await import('../stores/useSubtitleStore');`
+  - `optimizationService.ts` 中有一行 `const { useSettingsStore } = await import('../stores/useSettingsStore');`
 
-1.  当用户在 `结果审阅` 弹窗中查看AI优化结果时，“差异对比”部分必须以内联（inline）差异的形式展示文本。
-2.  在优化后文本中**新增**的内容，必须有明显的视觉高亮（例如：绿色背景）。
-3.  从原始文本中**删除**的内容，必须以带删除线的形式展示，并有明显的视觉高亮（例如：红色背景）。
-4.  两个版本之间**未发生改变**的文本，应保持正常显示，无特殊高亮。
-5.  后端必须调用项目中已有的 `text_utils.calculate_text_diff` 函数来完成精细化的差异计算。
-6.  该功能必须能正确处理无变化、仅标点变化和内容有较大变化的各类情况。
-7.  修复后，原有的字幕优化和审阅流程的其他功能不受影响。
+- **解决方案**:
+  在这两个文件中，将**动态导入改为静态导入**。Store 通常是应用的核心状态，应该在应用启动时就加载，而不是按需加载。
 
-### **任务 / 子任务**
+  **1. 修改 `src/components/ResultReviewModal.tsx`:**
+  ```tsx
+  // 在文件顶部添加这个静态导入
+  import { useSubtitleStore } from '../stores/useSubtitleStore';
+  import {
+    Box,
+    // ... 其他 MUI 组件
+  } from '@mui/material';
+  // ... 其他 import
+  
+  // ...
+  
+  export function ResultReviewModal({
+    // ... props
+  }) {
+    // ...
+  
+    const handleApplyAll = useCallback(async () => {
+      if (!optimizationResult) return;
+      
+      setIsApplying(true);
+      try {
+        // 直接使用静态导入的 store，移除这里的 await import
+        const currentSubtitles = useSubtitleStore.getState().subtitles;
+        
+        // ... 剩下的逻辑不变
+        
+      } catch (error) {
+        console.error('Failed to apply optimized results:', error);
+      } finally {
+        setIsApplying(false);
+      }
+    }, [optimizationResult, onApply, onClose, transformDiffs]);
+  
+    // ... 剩下的组件代码
+  }
+  ```
 
--   [ ] **任务 1: 修改后端差异计算逻辑 (AC: 1, 5)**
-    -   [ ] **子任务 1.1:** 在 `backend/subtitle_aligner.py` 文件中，从 `text_utils` 模块导入 `calculate_text_diff` 函数。
-    -   [ ] **子任务 1.2:** 定位到 `SubtitleAligner` 类中的 `_calculate_diffs` 方法。
-    -   [ ] **子任务 1.3:** 将该方法内部的逻辑完全替换为对 `calculate_text_diff(original_text, optimized_text)` 的调用和返回。
-
--   [ ] **任务 2: 验证修复效果 (AC: 1, 2, 3, 4, 6, 7)**
-    -   [ ] **子任务 2.1:** 为 `SubtitleAligner._calculate_diffs` 方法编写或更新单元测试，确保它现在能返回一个包含"added"、"removed"和"normal"类型的精细化差异列表。
-    -   [ ] **子任务 2.2:** 启动应用程序，手动执行一次“AI字幕优化”流程。
-    -   [ ] **子任务 2.3:** 在弹出的 `结果审阅` 弹窗中，目视检查“差异对比”区域的渲染效果，确认新增、删除和未变动的文本都按预期高亮显示。
-
--   [ ] **任务 3: 代码审查与收尾**
-    -   [ ] **子任务 3.1:** 审查代码修改，确保其符合项目编码规范。
-    -   [ ] **子任务 3.2:** 移除或清理所有用于调试的临时代码。
-    -   [ ] **子任务 3.3:** 将本故事的状态更新为“Review”。
-
-### **故事背景与集成环境**
-
-* **集成系统**: 此功能是对现有字幕优化流程的修正。
-* **技术栈**: 后端使用 Python 和 `diff-match-patch` 库；前端使用 React 和 TypeScript。
-* **需遵循的模式**: 项目中已存在一个正确的差异计算工具函数 `calculate_text_diff` (位于 `backend/text_utils.py`)。本次修改需要用这个正确的函数替换掉当前使用的占位符逻辑。
-* **影响触点**: 主要修改点是后端 `backend/subtitle_aligner.py` 文件中的 `_calculate_diffs` 方法。前端 `ResultReviewModal.tsx` 组件将接收到正确格式的数据并正确渲染。
-
-### **技术说明**
-
-* **集成方法**:
-    1.  在 `backend/subtitle_aligner.py` 文件中，导入 `calculate_text_diff` 函数：`from text_utils import calculate_text_diff`。
-    2.  将 `SubtitleAligner` 类中的 `_calculate_diffs` 方法的实现，替换为直接调用 `calculate_text_diff(original_text, optimized_text)`。
-* **需遵循的模式参考**: 参照 `backend/text_utils.py` 中 `calculate_text_diff` 的实现，它使用了 `diff-match-patch` 库并进行了语义清理，是本次修复需要调用的标准模式。
-* **关键约束**: 无。这是一个直接的逻辑替换。
-
-### **风险与兼容性检查**
-
-* **主要风险**: 风险极低。此次修改是用一个项目中已存在的、功能正确的工具函数来替换一个简化的占位符函数。
-* **兼容性**: 无兼容性问题。前端 `DiffHighlighter` 组件的设计正是为了处理这种精细化的差异数据格式。
-* **回滚方案**: 如果出现问题，只需将 `_calculate_diffs` 方法还原为修改前的代码即可。
-
-### **完成定义 (Definition of Done)**
-
-* [x] 所有验收标准均已满足。
-* [x] 集成要求已通过验证。
-* [x] 对现有功能进行了回归测试，确保无负面影响。
-* [x] 代码遵循现有项目的编码标准。
-
-### **QA 结果**
-
-**审查日期**: 2025-09-09  
-**审查者**: Quinn (测试架构师)  
-**质量门禁**: ✅ **PASS**  
-**决策理由**: 
-- 所有验收标准均已实现并通过验证
-- 代码质量高，符合项目编码规范
-- 测试覆盖充分，风险等级低
-- 功能完整，用户体验良好
-
-**关键发现**:
-- 后端 `subtitle_aligner.py:269` 已正确调用 `calculate_text_diff` 函数
-- 前端 `DiffHighlighter.tsx` 组件完整实现内联差异高亮显示
-- 测试文件 `test_subtitle_aligner.py:301-456` 提供全面测试覆盖
-- 整体实现质量优秀，无重大风险
-
-**建议**: 可以合并到主分支并准备发布
-
-### **状态**
-
-**状态**: ✅ **QA 通过 - 准备发布**
+  **2. 修改 `src/services/optimizationService.ts`:**
+  ```typescript
+  // 在文件顶部添加这个静态导入
+  import { useSettingsStore } from '../stores/useSettingsStore';
+  import { API_BASE_URL, API_ENDPOINTS, HTTP_METHODS, handleApiError, handleNetworkError } from './apiConfig';
+  // ... 其他 import
+  
+  // ...
+  
+  class OptimizationService {
+    // ...
+  
+    async optimizeSubtitles(
+      request: OptimizationRequest, 
+      progressCallback?: (event: OptimizationProgressEvent) => void
+    ): Promise<OptimizationResponse> {
+      
+      // 使用静态导入的 store，移除这里的 try-catch 和 await import
+      const apiConfig = useSettingsStore.getState().apiConfig;
+      const defaultConfig: Partial<OptimizationRequest> = {
+        batchSize: apiConfig.batchSize,
+        parallelismCount: apiConfig.parallelismCount,
+        model: apiConfig.model,
+        temperature: apiConfig.temperature,
+        max_tokens: apiConfig.maxTokens,
+        apiKey: apiConfig.apiKey,
+        apiUrl: apiConfig.apiUrl
+      };
+  
+      // ... 剩下的逻辑不变
+    }
+  
+    // ... 剩下的类代码
+  }
+  ```
+  完成以上修改后，这两个动态导入的警告就会消失。

@@ -1,36 +1,43 @@
 import { create } from 'zustand';
 
 interface ApiConfig {
-  endpoint: string;
-  apiKey: string;
   model: string;
   temperature: number;
   maxTokens: number;
   batchSize: number;
+  parallelismCount: number;
+  apiKey: string;
+  apiUrl: string;
 }
 
 // 开发环境预设配置
 const DEVELOPMENT_PRESETS = {
   openai: {
-    endpoint: 'https://api.openai.com/v1/chat/completions',
     model: 'gpt-4o-mini',
     temperature: 0.7,
     maxTokens: 2000,
     batchSize: 10,
+    parallelismCount: 3,
+    apiKey: '',
+    apiUrl: 'https://api.openai.com/v1/chat/completions',
   },
   anthropic: {
-    endpoint: 'https://api.anthropic.com/v1/messages',
     model: 'claude-3-sonnet-20240229',
     temperature: 0.7,
     maxTokens: 2000,
     batchSize: 10,
+    parallelismCount: 3,
+    apiKey: '',
+    apiUrl: 'https://api.anthropic.com/v1/messages',
   },
   local: {
-    endpoint: 'http://localhost:8080/v1/chat/completions',
     model: 'GLM-4.5',
     temperature: 0.7,
     maxTokens: 2000,
     batchSize: 10,
+    parallelismCount: 3,
+    apiKey: '',
+    apiUrl: 'http://localhost:8000/v1/chat/completions',
   },
 } as const;
 
@@ -45,7 +52,6 @@ interface SettingsState {
   updateApiConfig: (config: Partial<ApiConfig>) => void;
   loadApiConfig: () => void;
   saveApiConfig: () => void;
-  validateApiEndpoint: (endpoint: string) => boolean;
   applyPreset: (presetType: PresetType) => void;
   getAvailablePresets: () => Array<{ key: PresetType; name: string; description: string }>;
   isDevelopmentMode: () => boolean;
@@ -55,19 +61,19 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   theme: 'dark', // Default to dark theme
   fillerWords: [],
   apiConfig: {
-    endpoint: '',
-    apiKey: '',
     model: 'gpt-4o-mini',
     temperature: 0.7,
     maxTokens: 2000,
     batchSize: 10,
+    parallelismCount: 3,
+    apiKey: '',
+    apiUrl: 'https://api.openai.com/v1/chat/completions',
   },
   loadFillerWords: async () => {
     try {
       // Note: In a real app, you might want to fetch this from a static asset endpoint
       // or handle it differently depending on your build process.
-      // Using a direct fetch assumes the file is in the public directory or accessible via a route.
-      // For this project, we'll assume it's in the root of the `public` folder.
+      // Using a direct fetch assumes that file is in the root of the `public` folder.
       const response = await fetch('/filler_words.json');
       if (!response.ok) {
         throw new Error('Failed to load filler words');
@@ -103,18 +109,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       localStorage.setItem('apiConfig', JSON.stringify(apiConfig));
     } catch (error) {
       console.error('Error saving API config to localStorage:', error);
-      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
-        throw new Error('Local storage quota exceeded. Please clear some data or reduce the API key size.');
-      }
       throw error;
-    }
-  },
-  validateApiEndpoint: (endpoint: string) => {
-    try {
-      new URL(endpoint);
-      return true;
-    } catch {
-      return false;
     }
   },
   applyPreset: (presetType: PresetType) => {
@@ -128,17 +123,17 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       {
         key: 'openai',
         name: 'OpenAI',
-        description: 'OpenAI GPT-4 API 配置'
+        description: 'OpenAI GPT-4 模型配置'
       },
       {
         key: 'anthropic',
         name: 'Anthropic',
-        description: 'Anthropic Claude 3 API 配置'
+        description: 'Anthropic Claude 3 模型配置'
       },
       {
         key: 'local',
         name: 'Local Server',
-        description: '本地开发服务器配置'
+        description: '本地服务器模型配置'
       }
     ];
   },

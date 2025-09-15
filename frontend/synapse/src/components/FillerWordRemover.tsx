@@ -4,7 +4,6 @@ import { Trash2 } from 'lucide-react';
 import { useSubtitleStore } from '../stores/useSubtitleStore';
 import { useSettingsStore } from '../stores/useSettingsStore';
 import useNotifier from '../hooks/useNotifier';
-import { calculateDiffApi } from '../integration/diffApi';
 import { removeFillerWords } from '../services/subtitleService';
 
 export function FillerWordRemover() {

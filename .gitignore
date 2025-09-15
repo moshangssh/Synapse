@@ -7,7 +7,12 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+tests/
 node_modules
 dist
 dist-ssr
@@ -39,3 +44,4 @@ teams/
 backend_code.xml
 frontend_code.xml
 backend/.env
+.bmad-core/

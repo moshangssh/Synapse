@@ -20,4 +20,4 @@ export { setTimecode } from './timelineService';
 
 // 优化服务
 export { optimizationService } from './optimizationService';
-export type { OptimizationRequest, OptimizationResponse } from './optimizationService';
+export type { OptimizationRequest, OptimizationResponse } from '../types';

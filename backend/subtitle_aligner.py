@@ -63,8 +63,15 @@ class SubtitleAligner:
             # 验证输入
             validation_result = self._validate_alignment_inputs(original_subtitles, optimized_data)
             if not validation_result.success:
-                # 如果严格模式下验证失败，返回错误
-                if strict_mode:
+                # 检查是否是数量不匹配导致的失败
+                if "字幕数量不匹配" in validation_result.error and not strict_mode:
+                    # 宽松模式下，使用部分对齐处理数量不匹配的情况
+                    self.logger.warning("检测到字幕数量不匹配，使用部分对齐模式")
+                    partial_result = self._create_partial_alignment(original_subtitles, optimized_data)
+                    partial_result.processing_time = time.time() - start_time
+                    return partial_result
+                elif strict_mode:
+                    # 严格模式下验证失败，返回错误
                     return validation_result
                 else:
                     # 宽松模式下使用智能对齐
@@ -183,7 +190,7 @@ class SubtitleAligner:
                     error_code=OptimizationErrorCode.INVALID_REQUEST
                 )
         
-        # 然后检查字幕数量匹配
+        # 检查字幕数量匹配
         original_count = len(original_subtitles)
         optimized_count = len(optimized_data)
         
@@ -210,10 +217,12 @@ class SubtitleAligner:
             if extra_in_optimized:
                 self.logger.warning(f"  - 额外的ID: {sorted(extra_in_optimized)}")
             
+            # 对于数量不匹配的情况，返回特殊的失败结果，以便调用者决定是否进行智能对齐
             return AlignmentResult(
                 success=False,
-                error=f"字幕数量不匹配: 原始={original_count}, 优化={optimized_count}",
-                error_code=OptimizationErrorCode.PROCESSING_ERROR
+                error=f"字幕数量不匹配: 原始={original_count}, 优化={optimized_count}, 缺失ID: {sorted(missing_in_optimized)}",
+                error_code=OptimizationErrorCode.PROCESSING_ERROR,
+                warnings=[f"字幕数量不匹配，缺失ID: {sorted(missing_in_optimized)}"]
             )
         
         self.logger.info("对齐输入验证通过")
@@ -267,6 +276,75 @@ class SubtitleAligner:
     def _calculate_diffs(self, original_text: str, optimized_text: str) -> List[DiffPartModel]:
         """计算文本差异"""
         return calculate_text_diff(original_text, optimized_text)
+    
+    def _create_partial_alignment(
+        self, 
+        original_subtitles: List[SimpleSubtitleItem], 
+        optimized_data: List[Dict[str, Any]]
+    ) -> AlignmentResult:
+        """创建部分对齐结果：处理优化结果少于原始字幕数量的情况"""
+        self.logger.info("=== 开始部分对齐 ===")
+        
+        # 创建原始字幕映射
+        original_map = {sub.id: sub for sub in original_subtitles}
+        # 创建优化数据映射
+        optimized_map = {item['id']: item for item in optimized_data}
+        
+        aligned_subtitles = []
+        warnings = []
+        matched_count = 0
+        fallback_count = 0
+        
+        # 按原始字幕顺序处理
+        for original_sub in original_subtitles:
+            if original_sub.id in optimized_map:
+                # 找到对应的优化数据
+                optimized_item = optimized_map[original_sub.id]
+                optimized_text = optimized_item.get('optimized_text', '')
+                
+                if not optimized_text:
+                    optimized_text = original_sub.text
+                    warnings.append(f"ID {original_sub.id} 缺少优化文本，使用原始文本")
+                
+                # 计算差异
+                diffs = self._calculate_diffs(original_sub.text, optimized_text)
+                
+                # 创建对齐后的字幕项
+                aligned_item = OptimizedSubtitleItem(
+                    id=original_sub.id,
+                    original_text=original_sub.text,
+                    optimized_text=optimized_text,
+                    diffs=diffs
+                )
+                
+                aligned_subtitles.append(aligned_item)
+                matched_count += 1
+            else:
+                # 没有找到对应的优化数据，使用原始文本作为回退
+                self.logger.warning(f"ID {original_sub.id} 未在优化数据中找到，使用原始文本作为回退")
+                
+                diffs = self._calculate_diffs(original_sub.text, original_sub.text)
+                
+                aligned_item = OptimizedSubtitleItem(
+                    id=original_sub.id,
+                    original_text=original_sub.text,
+                    optimized_text=original_sub.text,
+                    diffs=diffs
+                )
+                
+                aligned_subtitles.append(aligned_item)
+                fallback_count += 1
+        
+        self.logger.info(f"部分对齐完成: 匹配={matched_count}, 回退={fallback_count}, 总计={len(aligned_subtitles)}")
+        
+        if warnings:
+            self.logger.warning(f"部分对齐警告: {warnings}")
+        
+        return AlignmentResult(
+            success=True,
+            aligned_subtitles=aligned_subtitles,
+            warnings=warnings + [f"部分对齐：成功匹配 {matched_count} 项，回退 {fallback_count} 项"]
+        )
     
     def _validate_alignment_result(
         self, 

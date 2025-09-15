@@ -25,6 +25,8 @@ export const API_ENDPOINTS = {
   
   // 优化相关
   OPTIMIZER_OPTIMIZE: '/api/v1/optimizer/optimize',
+  OPTIMIZER_OPTIMIZE_STREAM: '/api/v1/optimizer/optimize-stream',
+  OPTIMIZER_TEST_CONNECTION: '/api/v1/optimizer/test-connection',
 } as const;
 
 // HTTP方法

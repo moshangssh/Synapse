@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, memo } from 'react';
-import { TableCell, TextField } from '@mui/material';
+import { TableCell, TextField, Box } from '@mui/material';
 import DiffHighlighter from './DiffHighlighter';
 import { Subtitle } from '../types';
 import { textCellStyle, textFieldStyle, textDisplayStyle } from './sharedStyles';
@@ -129,13 +129,13 @@ const EditableSubtitleCell: React.FC<EditableSubtitleCellProps> = ({
           sx={textFieldStyle}
         />
       ) : (
-        <div style={textDisplayStyle}>
+        <Box sx={textDisplayStyle}>
           {row.diffs && row.diffs.length > 0 ? (
             <DiffHighlighter diffs={row.diffs} />
           ) : (
             <p style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{row.text}</p>
           )}
-        </div>
+        </Box>
       )}
     </TableCell>
   );

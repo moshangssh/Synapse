@@ -75,16 +75,14 @@ export function MainLayout() {
       abortControllerRef.current.abort();
     }
     abortControllerRef.current = new AbortController();
-    const signal = abortControllerRef.current.signal;
 
     setLoading(true);
     setConnectionStatus("connecting");
     setErrorMessage(null);
     try {
-      const subtitlesWithDiffs = await fetchSubtitlesService(trackIndex);
-      setSubtitles(subtitlesWithDiffs);
-      // Note: setFrameRate needs to be called with the frame rate from the response
-      // This will be handled in the service layer in a future update
+      const subtitlesWithFrameRate = await fetchSubtitlesService(trackIndex);
+      setSubtitles(subtitlesWithFrameRate.subtitles);
+      setFrameRate(subtitlesWithFrameRate.frameRate);
       setConnectionStatus("connected");
     } catch (error: any) {
       if (error.name === 'AbortError') {
@@ -121,7 +119,7 @@ export function MainLayout() {
       const tracks = await fetchSubtitleTracksService();
       setSubtitleTracks(tracks);
       if (tracks.length > 0) {
-        const firstTrackIndex = tracks[0].track_index;
+        const firstTrackIndex = tracks[0].trackIndex;
         setActiveTrackIndex(firstTrackIndex);
         // 设置字幕来源为 davinci，确保时间码正确转换
         setCurrentSubtitleSource('davinci');

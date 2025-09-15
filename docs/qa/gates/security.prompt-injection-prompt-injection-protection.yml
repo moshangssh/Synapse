@@ -1,0 +1,46 @@
+schema: 1
+story: "security.prompt-injection"
+story_title: "防范在AI优化功能中的提示词注入风险 - Brownfield Addition"
+gate: PASS
+status_reason: "所有安全需求满足，测试全面通过，无功能退化，代码质量高"
+reviewer: "Quinn (Test Architect)"
+updated: "2025-09-12T00:00:00Z"
+
+top_issues: []
+waiver: { active: false }
+
+quality_score: 100
+expires: "2025-09-26T00:00:00Z"
+
+evidence:
+  tests_reviewed: 9
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "XML标签隔离+安全约束指令有效防止提示词注入，所有安全测试通过"
+  performance:
+    status: PASS
+    notes: "实现简单，性能影响可忽略不计"
+  reliability:
+    status: PASS
+    notes: "代码稳定，正确处理边界情况"
+  maintainability:
+    status: PASS
+    notes: "代码清晰，文档完善，测试覆盖率高"
+
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 0, low: 0 }
+  recommendations:
+    must_fix: []
+    monitor: []
+
+recommendations:
+  immediate: []
+  future:
+    - action: "考虑添加对超长reference_info的输入验证"
+      refs: ["backend/prompt.py:99-103"]

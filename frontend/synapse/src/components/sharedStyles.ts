@@ -56,7 +56,7 @@ export const textFieldStyle: SxProps<Theme> = {
   },
 };
 
-export const textDisplayStyle: React.CSSProperties = {
+export const textDisplayStyle: SxProps<Theme> = {
   padding: '4px 8px',
   height: 'auto', // Allow height to grow with content
   minHeight: '36px', // Maintain a minimum height

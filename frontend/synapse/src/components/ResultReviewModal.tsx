@@ -17,6 +17,7 @@ import { ChevronDown, Check, X } from 'lucide-react';
 import { useState, useCallback } from 'react';
 import DiffHighlighter, { DiffPart } from './DiffHighlighter';
 import { OptimizationResponse, Subtitle } from '../types';
+import { useSubtitleStore } from '../stores/useSubtitleStore';
 
 interface ResultReviewModalProps {
   open: boolean;
@@ -62,7 +63,6 @@ export function ResultReviewModal({
     setIsApplying(true);
     try {
       // 获取当前字幕数据以保留时间码信息
-      const { useSubtitleStore } = await import('../stores/useSubtitleStore');
       const currentSubtitles = useSubtitleStore.getState().subtitles;
       
       // 将优化结果转换为Subtitle格式，保留原始时间码

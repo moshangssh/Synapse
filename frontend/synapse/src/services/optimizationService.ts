@@ -1,5 +1,13 @@
 import { API_BASE_URL, API_ENDPOINTS, HTTP_METHODS, handleApiError, handleNetworkError } from './apiConfig';
-import { Subtitle, OptimizationRequest, OptimizationResponse } from '../types';
+import { 
+  Subtitle, 
+  OptimizationRequest, 
+  OptimizationResponse, 
+  ConnectionTestRequest, 
+  ConnectionTestResponse,
+  OptimizationProgressEvent
+} from '../types';
+import { useSettingsStore } from '../stores/useSettingsStore';
 
 // 优化服务类
 class OptimizationService {
@@ -8,16 +16,7 @@ class OptimizationService {
       'Content-Type': 'application/json',
     };
     
-    // 从设置存储获取 API 密钥（如果存在）
-    try {
-      const { useSettingsStore } = await import('../stores/useSettingsStore');
-      const apiKey = useSettingsStore.getState().apiKey;
-      if (apiKey) {
-        headers['Authorization'] = `Bearer ${apiKey}`;
-      }
-    } catch (error) {
-      console.warn('无法获取 API 密钥:', error);
-    }
+    // API 密钥由前端管理，通过请求体发送给后端
     
     return headers;
   }
@@ -56,150 +55,60 @@ class OptimizationService {
   }
 
   /**
-   * 执行字幕优化 - 支持分批发送
+   * 执行字幕优化 - 使用流式响应提供实时进度反馈
    */
-  async optimizeSubtitles(request: OptimizationRequest): Promise<OptimizationResponse> {
+  async optimizeSubtitles(
+    request: OptimizationRequest, 
+    progressCallback?: (event: OptimizationProgressEvent) => void
+  ): Promise<OptimizationResponse> {
     // 从设置存储获取默认配置
     let defaultConfig: Partial<OptimizationRequest> = {
-      batch_size: 10,
+      batchSize: 10,
+      parallelismCount: 0,
       model: 'gpt-4o-mini',
       temperature: 0.7,
       max_tokens: 2000,
+      apiKey: '',
+      apiUrl: '',
     };
 
     try {
-      const { useSettingsStore } = await import('../stores/useSettingsStore');
       const apiConfig = useSettingsStore.getState().apiConfig;
       defaultConfig = {
-        batch_size: apiConfig.batchSize,
+        batchSize: apiConfig.batchSize,
+        parallelismCount: apiConfig.parallelismCount,
         model: apiConfig.model,
         temperature: apiConfig.temperature,
         max_tokens: apiConfig.maxTokens,
-        api_key: apiConfig.apiKey,  // 添加 API 密钥
-        endpoint: apiConfig.endpoint  // 添加 API 端点
+        apiKey: apiConfig.apiKey,
+        apiUrl: apiConfig.apiUrl
       };
     } catch (error) {
       console.warn('无法获取 API 配置，使用默认值:', error);
     }
 
     const finalRequest = {
-      ...defaultConfig,
       ...request,
+      batchSize: request.batchSize ?? defaultConfig.batchSize,
+      parallelismCount: request.parallelismCount ?? defaultConfig.parallelismCount,
+      model: request.model ?? defaultConfig.model,
+      temperature: request.temperature ?? defaultConfig.temperature,
+      max_tokens: request.max_tokens ?? defaultConfig.max_tokens,
+      apiKey: request.apiKey ?? defaultConfig.apiKey,
+      apiUrl: request.apiUrl ?? defaultConfig.apiUrl,
     };
 
     console.log('开始优化字幕:', {
       subtitleCount: finalRequest.subtitles.length,
       hasReferenceInfo: !!finalRequest.reference_info,
-      batchSize: finalRequest.batch_size,
-      model: finalRequest.model,
-      hasApiKey: !!finalRequest.api_key,
-      hasEndpoint: !!finalRequest.endpoint
+      batchSize: finalRequest.batchSize,
+      model: finalRequest.model
     });
 
-    // 检查是否需要分批发送
-    if (finalRequest.subtitles.length > finalRequest.batch_size) {
-      console.log(`字幕数量(${finalRequest.subtitles.length})超过批次大小(${finalRequest.batch_size})，开始分批发送`);
-      return this.optimizeSubtitlesInBatches(finalRequest);
-    } else {
-      console.log('单批发送字幕');
-      return this.makeRequest<OptimizationResponse>(
-        API_ENDPOINTS.OPTIMIZER_OPTIMIZE,
-        {
-          method: HTTP_METHODS.POST,
-          body: JSON.stringify(finalRequest),
-        }
-      );
-    }
+    // 使用流式优化
+    return this.optimizeSubtitlesStream(finalRequest, progressCallback);
   }
 
-  /**
-   * 分批发送字幕优化请求
-   */
-  private async optimizeSubtitlesInBatches(request: OptimizationRequest): Promise<OptimizationResponse> {
-    const { subtitles, batch_size, ...otherConfig } = request;
-    const batches: typeof subtitles[] = [];
-    
-    // 将字幕分成批次
-    for (let i = 0; i < subtitles.length; i += batch_size) {
-      batches.push(subtitles.slice(i, i + batch_size));
-    }
-
-    console.log(`将 ${subtitles.length} 条字幕分成 ${batches.length} 个批次:`, 
-      batches.map((batch, index) => `批次${index + 1}: ${batch.length}条`).join(', ')
-    );
-
-    const allResults: OptimizationResponse['data'] = [];
-    const allMetadata: OptimizationResponse['metadata'] = {
-      total_subtitles: subtitles.length,
-      batches_processed: 0,
-      cache_hits: 0,
-      cache_hit_rate: 0,
-      processing_time: 0,
-      model_used: request.model,
-      errors_count: 0
-    };
-
-    // 逐个发送批次请求
-    for (let i = 0; i < batches.length; i++) {
-      const batch = batches[i];
-      console.log(`正在发送批次 ${i + 1}/${batches.length} (${batch.length} 条字幕)`);
-
-      const batchRequest: OptimizationRequest = {
-        subtitles: batch,
-        batch_size: batch_size,
-        ...otherConfig
-      };
-
-      try {
-        const batchResponse = await this.makeRequest<OptimizationResponse>(
-          API_ENDPOINTS.OPTIMIZER_OPTIMIZE,
-          {
-            method: HTTP_METHODS.POST,
-            body: JSON.stringify(batchRequest),
-          }
-        );
-
-        console.log(`批次 ${i + 1} 处理成功，获得 ${batchResponse.data.length} 条结果`);
-        allResults.push(...batchResponse.data);
-        
-        // 累积元数据
-        if (batchResponse.metadata) {
-          allMetadata.batches_processed += batchResponse.metadata.batches_processed || 1;
-          allMetadata.cache_hits += batchResponse.metadata.cache_hits || 0;
-          allMetadata.processing_time += batchResponse.metadata.processing_time || 0;
-          allMetadata.errors_count += batchResponse.metadata.errors_count || 0;
-        }
-
-      } catch (error) {
-        console.error(`批次 ${i + 1} 处理失败:`, error);
-        allMetadata.errors_count += 1;
-        
-        // 为失败的批次创建原始字幕作为备用
-        const fallbackResults = batch.map(subtitle => ({
-          id: subtitle.id,
-          original_text: subtitle.text,
-          optimized_text: subtitle.text,
-          confidence: 0.5,
-          changes: [],
-          has_changes: false
-        }));
-        allResults.push(...fallbackResults);
-      }
-    }
-
-    // 计算最终的缓存命中率
-    allMetadata.cache_hit_rate = allMetadata.batches_processed > 0 
-      ? allMetadata.cache_hits / allMetadata.batches_processed 
-      : 0;
-
-    console.log(`所有批次处理完成，总共获得 ${allResults.length} 条结果`);
-    console.log('最终元数据:', allMetadata);
-
-    return {
-      data: allResults,
-      metadata: allMetadata
-    };
-  }
 
   /**
    * 验证优化请求
@@ -226,8 +135,12 @@ class OptimizationService {
       errors.push('参考信息必须是字符串');
     }
 
-    if (request.batch_size !== undefined && (typeof request.batch_size !== 'number' || request.batch_size < 1)) {
+    if (request.batchSize !== undefined && (typeof request.batchSize !== 'number' || request.batchSize < 1)) {
       errors.push('批处理大小必须是大于0的数字');
+    }
+
+    if (request.parallelismCount !== undefined && (typeof request.parallelismCount !== 'number' || request.parallelismCount < 0)) {
+      errors.push('并行数量必须是非负整数');
     }
 
     if (request.temperature !== undefined && (typeof request.temperature !== 'number' || request.temperature < 0 || request.temperature > 2)) {
@@ -261,6 +174,119 @@ class OptimizationService {
   }
 
   /**
+   * 流式优化字幕 - 使用 EventSource API 处理实时进度
+   */
+  private async optimizeSubtitlesStream(
+    request: OptimizationRequest,
+    progressCallback?: (event: OptimizationProgressEvent) => void
+  ): Promise<OptimizationResponse> {
+    // 将请求数据编码为查询参数
+    const encodedData = encodeURIComponent(JSON.stringify(request));
+    const url = `${API_BASE_URL}${API_ENDPOINTS.OPTIMIZER_OPTIMIZE_STREAM}?optimize_data=${encodedData}`;
+    
+    return new Promise((resolve, reject) => {
+      let eventSource: EventSource | null = null;
+      let completed = false;
+      
+      try {
+        // 发送请求并监听 SSE 事件
+        eventSource = new EventSource(url, {
+          withCredentials: false
+        });
+        
+        // 超时处理
+        const timeoutId = setTimeout(() => {
+          if (eventSource && !completed) {
+            eventSource.close();
+            reject(new Error('优化请求超时'));
+          }
+        }, 300000); // 5分钟超时
+        
+        // 处理 SSE 消息
+        eventSource.onmessage = (event) => {
+          try {
+            const sseEvent = JSON.parse(event.data);
+            const progressEvent: OptimizationProgressEvent = {
+              type: sseEvent.type,
+              data: sseEvent.data,
+              message: sseEvent.data.message || '',
+              timestamp: Date.now()
+            };
+            
+            // 调用进度回调
+            if (progressCallback) {
+              progressCallback(progressEvent);
+            }
+            
+            // 处理不同类型的事件
+            switch (sseEvent.type) {
+              case 'complete':
+                completed = true;
+                clearTimeout(timeoutId);
+                eventSource?.close();
+                
+                // 转换为标准的 OptimizationResponse 格式
+                const response: OptimizationResponse = {
+                  data: sseEvent.data.optimized_subtitles.map((item: any) => ({
+                    id: item.id,
+                    original_text: item.original_text,
+                    optimized_text: item.optimized_text,
+                    diffs: item.diffs || []
+                  })),
+                  metadata: {
+                    processing_time: sseEvent.data.metadata.processing_time,
+                    cache_stats: {
+                      cache_hits: sseEvent.data.metadata.cache_hits,
+                      cache_misses: sseEvent.data.metadata.cache_misses || 0
+                    },
+                    error_count: sseEvent.data.metadata.fallback_count || 0
+                  }
+                };
+                
+                resolve(response);
+                break;
+                
+              case 'error':
+                completed = true;
+                clearTimeout(timeoutId);
+                eventSource?.close();
+                reject(new Error(sseEvent.data.error || '优化过程中发生错误'));
+                break;
+                
+              case 'batch_start':
+              case 'batch_complete':
+              case 'batch_error':
+                // 这些是进度事件，不需要特殊处理，回调已经调用了
+                break;
+                
+              default:
+                console.warn('未知的 SSE 事件类型:', sseEvent.type);
+            }
+          } catch (error) {
+            console.error('解析 SSE 事件失败:', error);
+          }
+        };
+        
+        // 处理 SSE 错误
+        eventSource.onerror = (_) => {
+          if (!completed) {
+            completed = true;
+            clearTimeout(timeoutId);
+            eventSource?.close();
+            reject(new Error('SSE 连接错误'));
+          }
+        };
+        
+      } catch (error) {
+        if (eventSource && !completed) {
+          eventSource.close();
+        }
+        reject(new Error('流式优化初始化失败: ' + (error as Error).message));
+      }
+    });
+  }
+
+  /**
    * 超时包装器
    */
   async withTimeout<T>(
@@ -272,6 +298,38 @@ class OptimizationService {
     });
 
     return Promise.race([promise, timeoutPromise]);
+  }
+
+  /**
+   * 测试API连通性
+   */
+  async testConnection(request: ConnectionTestRequest): Promise<ConnectionTestResponse> {
+    console.log('开始API连通性测试:', {
+      apiUrl: request.api_url,
+      model: request.model
+    });
+
+    try {
+      const response = await this.makeRequest<ConnectionTestResponse>(
+        API_ENDPOINTS.OPTIMIZER_TEST_CONNECTION,
+        {
+          method: HTTP_METHODS.POST,
+          body: JSON.stringify(request),
+        }
+      );
+
+      console.log('API连通性测试结果:', response);
+      return response;
+    } catch (error) {
+      console.error('API连通性测试失败:', error);
+      
+      // 返回一个错误响应
+      return {
+        success: false,
+        message: `连接测试失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        response_time: 0
+      };
+    }
   }
 }
 

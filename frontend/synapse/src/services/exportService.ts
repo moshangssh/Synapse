@@ -1,4 +1,4 @@
-import { API_BASE_URL, API_ENDPOINTS, handleApiError, handleNetworkError } from './apiConfig';
+import { API_BASE_URL, API_ENDPOINTS, handleNetworkError } from './apiConfig';
 
 /**
  * 导出字幕为SRT格式

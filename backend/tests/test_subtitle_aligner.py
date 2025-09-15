@@ -455,5 +455,261 @@ class TestSubtitleAligner:
         assert optimized_text in added_text or added_text in optimized_text
 
 
+@pytest.mark.asyncio
+async def test_align_subtitles_partial_optimization_strict_mode(self):
+        """测试严格模式下部分优化的字幕对齐 - 优化结果少于原始字幕"""
+        # 原始字幕有4个
+        original_subtitles = [
+            SubtitleItem(
+                id=1,
+                startTimecode="00:00:01:00",
+                endTimecode="00:00:03:00",
+                text="原始字幕1"
+            ),
+            SubtitleItem(
+                id=2,
+                startTimecode="00:00:03:00",
+                endTimecode="00:00:05:00",
+                text="原始字幕2"
+            ),
+            SubtitleItem(
+                id=3,
+                startTimecode="00:00:05:00",
+                endTimecode="00:00:07:00",
+                text="原始字幕3"
+            ),
+            SubtitleItem(
+                id=4,
+                startTimecode="00:00:07:00",
+                endTimecode="00:00:09:00",
+                text="原始字幕4"
+            )
+        ]
+        
+        # 优化数据只有2个（缺少ID 3和4）
+        partial_optimized_data = [
+            {"id": 1, "optimized_text": "优化后的字幕1"},
+            {"id": 2, "optimized_text": "优化后的字幕2"}
+        ]
+        
+        # 严格模式：应该失败
+        result = self.aligner.align_subtitles(original_subtitles, partial_optimized_data, strict_mode=True)
+        
+        assert result.success is False
+        assert "字幕数量不匹配" in result.error
+        assert result.error_code == OptimizationErrorCode.PROCESSING_ERROR
+    
+    @pytest.mark.asyncio
+    async def test_align_subtitles_partial_optimization_relaxed_mode(self):
+        """测试宽松模式下部分优化的字幕对齐 - 优化结果少于原始字幕"""
+        # 原始字幕有4个
+        original_subtitles = [
+            SubtitleItem(
+                id=1,
+                startTimecode="00:00:01:00",
+                endTimecode="00:00:03:00",
+                text="原始字幕1"
+            ),
+            SubtitleItem(
+                id=2,
+                startTimecode="00:00:03:00",
+                endTimecode="00:00:05:00",
+                text="原始字幕2"
+            ),
+            SubtitleItem(
+                id=3,
+                startTimecode="00:00:05:00",
+                endTimecode="00:00:07:00",
+                text="原始字幕3"
+            ),
+            SubtitleItem(
+                id=4,
+                startTimecode="00:00:07:00",
+                endTimecode="00:00:09:00",
+                text="原始字幕4"
+            )
+        ]
+        
+        # 优化数据只有2个（缺少ID 3和4）
+        partial_optimized_data = [
+            {"id": 1, "optimized_text": "优化后的字幕1"},
+            {"id": 2, "optimized_text": "优化后的字幕2"}
+        ]
+        
+        # 宽松模式：应该成功，缺失的字幕使用原始文本
+        result = self.aligner.align_subtitles(original_subtitles, partial_optimized_data, strict_mode=False)
+        
+        assert result.success is True
+        assert len(result.aligned_subtitles) == 4
+        
+        # 验证存在的字幕被优化
+        aligned_map = {item.id: item for item in result.aligned_subtitles}
+        
+        # ID 1 和 2 应该被优化
+        assert aligned_map[1].optimized_text == "优化后的字幕1"
+        assert aligned_map[2].optimized_text == "优化后的字幕2"
+        
+        # ID 3 和 4 应该使用原始文本（回退）
+        assert aligned_map[3].optimized_text == "原始字幕3"
+        assert aligned_map[4].optimized_text == "原始字幕4"
+        
+        # 验证顺序正确
+        for i, aligned in enumerate(result.aligned_subtitles):
+            assert aligned.id == i + 1
+        
+        # 验证有部分对齐的警告
+        assert len(result.warnings) > 0
+        assert any("部分对齐" in warning for warning in result.warnings)
+    
+    @pytest.mark.asyncio
+    async def test_create_partial_alignment_mixed_success_and_fallback(self):
+        """测试部分对齐 - 混合成功和回退"""
+        # 原始字幕有4个
+        original_subtitles = [
+            SubtitleItem(
+                id=1,
+                startTimecode="00:00:01:00",
+                endTimecode="00:00:03:00",
+                text="原始字幕1"
+            ),
+            SubtitleItem(
+                id=2,
+                startTimecode="00:00:03:00",
+                endTimecode="00:00:05:00",
+                text="原始字幕2"
+            ),
+            SubtitleItem(
+                id=3,
+                startTimecode="00:00:05:00",
+                endTimecode="00:00:07:00",
+                text="原始字幕3"
+            ),
+            SubtitleItem(
+                id=4,
+                startTimecode="00:00:07:00",
+                endTimecode="00:00:09:00",
+                text="原始字幕4"
+            )
+        ]
+        
+        # 优化数据有3个（缺少ID 4），但ID 2使用了回退文本
+        mixed_optimized_data = [
+            {"id": 1, "optimized_text": "优化后的字幕1"},  # 成功优化
+            {"id": 2, "optimized_text": "原始字幕2"},      # 回退（等于原始文本）
+            {"id": 3, "optimized_text": "优化后的字幕3"}   # 成功优化
+        ]
+        
+        # 调用部分对齐
+        result = self.aligner._create_partial_alignment(original_subtitles, mixed_optimized_data)
+        
+        assert result.success is True
+        assert len(result.aligned_subtitles) == 4
+        
+        # 验证结果
+        aligned_map = {item.id: item for item in result.aligned_subtitles}
+        
+        # ID 1 和 3 应该保持优化结果
+        assert aligned_map[1].optimized_text == "优化后的字幕1"
+        assert aligned_map[3].optimized_text == "优化后的字幕3"
+        
+        # ID 2 应该使用原始文本（因为在优化数据中使用了回退）
+        assert aligned_map[2].optimized_text == "原始字幕2"
+        
+        # ID 4 应该使用原始文本（因为缺失）
+        assert aligned_map[4].optimized_text == "原始字幕4"
+        
+        # 验证统计
+        warning_text = " ".join(result.warnings)
+        assert "成功匹配 2" in warning_text
+        assert "回退 2" in warning_text
+    
+    @pytest.mark.asyncio
+    async def test_create_partial_alignment_all_fallback(self):
+        """测试部分对齐 - 所有优化数据都回退"""
+        # 原始字幕有3个
+        original_subtitles = [
+            SubtitleItem(
+                id=1,
+                startTimecode="00:00:01:00",
+                endTimecode="00:00:03:00",
+                text="原始字幕1"
+            ),
+            SubtitleItem(
+                id=2,
+                startTimecode="00:00:03:00",
+                endTimecode="00:00:05:00",
+                text="原始字幕2"
+            ),
+            SubtitleItem(
+                id=3,
+                startTimecode="00:00:05:00",
+                endTimecode="00:00:07:00",
+                text="原始字幕3"
+            )
+        ]
+        
+        # 优化数据有2个，但都等于原始文本
+        all_fallback_data = [
+            {"id": 1, "optimized_text": "原始字幕1"},  # 回退
+            {"id": 2, "optimized_text": "原始字幕2"}   # 回退
+        ]
+        
+        # 调用部分对齐
+        result = self.aligner._create_partial_alignment(original_subtitles, all_fallback_data)
+        
+        assert result.success is True
+        assert len(result.aligned_subtitles) == 3
+        
+        # 验证所有字幕都使用原始文本
+        for i, aligned in enumerate(result.aligned_subtitles):
+            assert aligned.id == i + 1
+            assert aligned.optimized_text == original_subtitles[i].text
+            assert aligned.original_text == original_subtitles[i].text
+        
+        # 验证统计
+        warning_text = " ".join(result.warnings)
+        assert "成功匹配 2" in warning_text
+        assert "回退 1" in warning_text
+    
+    @pytest.mark.asyncio
+    async def test_create_partial_alignment_no_optimization_data(self):
+        """测试部分对齐 - 没有优化数据"""
+        # 原始字幕有2个
+        original_subtitles = [
+            SubtitleItem(
+                id=1,
+                startTimecode="00:00:01:00",
+                endTimecode="00:00:03:00",
+                text="原始字幕1"
+            ),
+            SubtitleItem(
+                id=2,
+                startTimecode="00:00:03:00",
+                endTimecode="00:00:05:00",
+                text="原始字幕2"
+            )
+        ]
+        
+        # 没有优化数据
+        empty_optimized_data = []
+        
+        # 调用部分对齐
+        result = self.aligner._create_partial_alignment(original_subtitles, empty_optimized_data)
+        
+        assert result.success is True
+        assert len(result.aligned_subtitles) == 2
+        
+        # 验证所有字幕都使用原始文本
+        for i, aligned in enumerate(result.aligned_subtitles):
+            assert aligned.id == i + 1
+            assert aligned.optimized_text == original_subtitles[i].text
+            assert aligned.original_text == original_subtitles[i].text
+        
+        # 验证统计
+        warning_text = " ".join(result.warnings)
+        assert "成功匹配 0" in warning_text
+        assert "回退 2" in warning_text
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

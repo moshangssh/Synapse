@@ -12,6 +12,7 @@ import {
   TextField,
   CircularProgress,
   Alert,
+  LinearProgress,
 } from '@mui/material';
 import { ChevronDown, Settings, Sparkles } from 'lucide-react';
 import { FillerWordRemover } from '../FillerWordRemover';
@@ -21,7 +22,7 @@ import { useState } from 'react';
 import { useSubtitleStore } from '../../stores/useSubtitleStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import { optimizationService } from '../../services/optimizationService';
-import { Subtitle, OptimizationResponse } from '../../types';
+import { Subtitle, OptimizationResponse, OptimizationProgressEvent } from '../../types';
 
 export function OptimizerSidebar() {
   const theme = useTheme();
@@ -33,8 +34,77 @@ export function OptimizerSidebar() {
   const [resultReviewModalOpen, setResultReviewModalOpen] = useState(false);
   const [optimizationResult, setOptimizationResult] = useState<OptimizationResponse | null>(null);
   
+  // 进度状态
+  const [progressInfo, setProgressInfo] = useState<{
+    currentBatch: number;
+    totalBatches: number;
+    processedCount: number;
+    totalCount: number;
+    progress: number;
+    message: string;
+  } | null>(null);
+  
   const { subtitles, setSubtitles } = useSubtitleStore();
   const { apiConfig } = useSettingsStore();
+  
+  // 处理进度事件
+  const handleProgressEvent = (event: OptimizationProgressEvent) => {
+    console.log('收到进度事件:', event);
+    
+    switch (event.type) {
+      case 'start':
+        setProgressInfo({
+          currentBatch: 0,
+          totalBatches: event.data.total_batches,
+          processedCount: 0,
+          totalCount: event.data.total_subtitles,
+          progress: 0,
+          message: '开始优化...'
+        });
+        break;
+        
+      case 'batch_start':
+        setProgressInfo(_ => ({
+          currentBatch: event.data.batch_number,
+          totalBatches: event.data.total_batches,
+          processedCount: event.data.processed_count,
+          totalCount: event.data.total_count,
+          progress: (event.data.processed_count / event.data.total_count) * 100,
+          message: `正在处理批次 ${event.data.batch_number}/${event.data.total_batches}...`
+        }));
+        break;
+        
+      case 'batch_complete':
+        setProgressInfo(_ => ({
+          currentBatch: event.data.batch_number,
+          totalBatches: event.data.total_batches,
+          processedCount: event.data.processed_count,
+          totalCount: event.data.total_count,
+          progress: (event.data.processed_count / event.data.total_count) * 100,
+          message: `批次 ${event.data.batch_number} 处理完成 (${event.data.batch_processing_time}秒)`
+        }));
+        break;
+        
+      case 'batch_error':
+        setProgressInfo(_ => ({
+          currentBatch: event.data.batch_number,
+          totalBatches: event.data.total_batches,
+          processedCount: event.data.processed_count,
+          totalCount: event.data.total_count,
+          progress: (event.data.processed_count / event.data.total_count) * 100,
+          message: `批次 ${event.data.batch_number} 处理失败，使用原始文本`
+        }));
+        break;
+        
+      case 'complete':
+        setProgressInfo(null);
+        break;
+        
+      case 'error':
+        setProgressInfo(null);
+        break;
+    }
+  };
   
   const handleOptimizeSubtitles = async () => {
     if (!subtitles || subtitles.length === 0) {
@@ -42,15 +112,12 @@ export function OptimizerSidebar() {
       return;
     }
     
-    // 检查 API 配置
-    if (!apiConfig.apiKey || !apiConfig.endpoint) {
-      setOptimizationError('请先配置 API 设置');
-      return;
-    }
+    // API 配置现在在后端管理，前端不再需要检查凭证
     
     setIsOptimizing(true);
     setOptimizationError(null);
     setOptimizationSuccess(null);
+    setProgressInfo(null);
     
     try {
       // 创建优化请求
@@ -63,23 +130,22 @@ export function OptimizerSidebar() {
         return;
       }
       
-      // 发送优化请求（带超时）
-      const response = await optimizationService.withTimeout(
-        optimizationService.optimizeSubtitles(request),
-        60000 // 60秒超时
-      );
+      // 发送优化请求（使用流式响应）
+      const response = await optimizationService.optimizeSubtitles(request, handleProgressEvent);
       
       // 保存优化结果并打开结果审阅模态窗口
       setOptimizationResult(response);
       setResultReviewModalOpen(true);
       setOptimizationSuccess(`成功优化 ${response.data.length} 个字幕条目`);
       
-      // 清空参考信息
+      // 清空参考信息和进度信息
       setReferenceInfo('');
+      setProgressInfo(null);
       
     } catch (error) {
       console.error('优化失败:', error);
       setOptimizationError(error instanceof Error ? error.message : '优化失败，请重试');
+      setProgressInfo(null);
     } finally {
       setIsOptimizing(false);
     }
@@ -94,7 +160,8 @@ export function OptimizerSidebar() {
         return {
           ...originalSubtitle,
           text: optimizedItem.text,
-          originalText: optimizedItem.originalText,
+          // 保留原始的 originalText，避免覆盖真正的原始文本
+          originalText: originalSubtitle.originalText || originalSubtitle.text,
           isModified: optimizedItem.isModified,
           diffs: optimizedItem.diffs,
         };
@@ -258,7 +325,7 @@ export function OptimizerSidebar() {
             <Button
               variant="contained"
               onClick={handleOptimizeSubtitles}
-              disabled={isOptimizing || (!subtitles || subtitles.length === 0) || !apiConfig.apiKey || !apiConfig.endpoint || !apiConfig.model}
+              disabled={isOptimizing || (!subtitles || subtitles.length === 0) || !apiConfig.model}
               startIcon={isOptimizing ? <CircularProgress size={16} /> : <Sparkles size={16} />}
               sx={{
                 backgroundColor: theme.palette.primary.main,
@@ -276,6 +343,40 @@ export function OptimizerSidebar() {
             >
               {isOptimizing ? 'Optimizing...' : 'AI Optimize Subtitles'}
             </Button>
+            
+            {/* 进度指示器 */}
+            {progressInfo && (
+              <Box sx={{ width: '100%', mt: 1 }}>
+                <LinearProgress 
+                  variant="determinate" 
+                  value={progressInfo.progress} 
+                  sx={{ 
+                    height: 8, 
+                    borderRadius: 4,
+                    backgroundColor: theme.palette.action.hover,
+                    '& .MuiLinearProgress-bar': {
+                      backgroundColor: theme.palette.primary.main,
+                    }
+                  }} 
+                />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+                  <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontSize: '0.75rem' }}>
+                    {progressInfo.message}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontSize: '0.75rem' }}>
+                    {Math.round(progressInfo.progress)}%
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+                  <Typography variant="caption" sx={{ color: theme.palette.text.disabled, fontSize: '0.7rem' }}>
+                    批次: {progressInfo.currentBatch}/{progressInfo.totalBatches}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: theme.palette.text.disabled, fontSize: '0.7rem' }}>
+                    {progressInfo.processedCount}/{progressInfo.totalCount}
+                  </Typography>
+                </Box>
+              </Box>
+            )}
             
             {/* 状态消息 */}
             {optimizationError && (

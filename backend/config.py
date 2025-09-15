@@ -20,9 +20,9 @@ class Config:
     
     def load_env(self):
         """加载环境变量"""
-        # LLM配置
-        self.llm_api_key = os.getenv("LLM_API_KEY", "demo_key")
-        self.llm_endpoint = os.getenv("LLM_ENDPOINT", "https://api.openai.com/v1/chat/completions")
+        # LLM配置（现在由前端传递，后端不再管理）
+        # self.llm_api_key = os.getenv("LLM_API_KEY", "demo_key")
+        # self.llm_endpoint = os.getenv("LLM_ENDPOINT", "https://api.openai.com/v1/chat/completions")
         self.llm_model = os.getenv("LLM_MODEL", "gpt-3.5-turbo")
         self.llm_timeout = int(os.getenv("LLM_TIMEOUT", "30"))
         self.llm_max_retries = int(os.getenv("LLM_MAX_RETRIES", "3"))
@@ -48,16 +48,16 @@ def get_settings() -> Config:
         return Config()
 
 
-def get_llm_config() -> Dict[str, Any]:
-    """获取LLM配置"""
-    settings = get_settings()
-    return {
-        "api_key": settings.llm_api_key,
-        "endpoint": settings.llm_endpoint,
-        "model": settings.llm_model,
-        "timeout": settings.llm_timeout,
-        "max_retries": settings.llm_max_retries
-    }
+# def get_llm_config() -> Dict[str, Any]:
+#     """获取LLM配置 - 已废弃，配置现在由前端传递"""
+#     settings = get_settings()
+#     return {
+#         "api_key": settings.llm_api_key,
+#         "endpoint": settings.llm_endpoint,
+#         "model": settings.llm_model,
+#         "timeout": settings.llm_timeout,
+#         "max_retries": settings.llm_max_retries
+#     }
 
 
 def get_cache_config() -> Dict[str, Any]:
@@ -80,16 +80,16 @@ def get_app_config() -> Dict[str, Any]:
     }
 
 
-def validate_config() -> bool:
-    """验证配置是否有效"""
-    settings = get_settings()
-    
-    # 检查必要的配置项
-    if not settings.llm_api_key or settings.llm_api_key == "demo_key":
-        logger.warning("LLM API_KEY 未设置或使用默认值，请设置环境变量 LLM_API_KEY")
-        return False
-    
-    return True
+# def validate_config() -> bool:
+#     """验证配置是否有效 - 已废弃，后端不再管理API密钥"""
+#     settings = get_settings()
+#     
+#     # 检查必要的配置项
+#     if not settings.llm_api_key or settings.llm_api_key == "demo_key":
+#         logger.warning("LLM API_KEY 未设置或使用默认值，请设置环境变量 LLM_API_KEY")
+#         return False
+#     
+#     return True
 
 
 def get_cors_origins() -> list:

@@ -29,6 +29,15 @@ export interface Subtitle {
 }
 
 /**
+* 字幕和帧率信息接口
+*/
+export interface SubtitlesWithFrameRate {
+/** 字幕数组 */
+subtitles: Subtitle[];
+/** 帧率 */
+frameRate: number;
+}
+/**
  * 字幕轨道信息接口
  */
 export interface SubtitleTrack {
@@ -94,18 +103,36 @@ export interface ApiError {
 /**
  * 优化请求接口
  */
+export interface ConnectionTestRequest {
+  api_url: string;
+  api_key: string;
+  model: string;
+}
+
+export interface ConnectionTestResponse {
+  success: boolean;
+  message: string;
+  details?: {
+    model?: string;
+    response_length?: number;
+    usage?: any;
+  };
+  response_time?: number;
+}
+
 export interface OptimizationRequest {
   subtitles: Array<{
     id: number;
     text: string;
   }>;
   reference_info?: string;
-  batch_size?: number;
+  batchSize?: number;
+  parallelismCount?: number;
   model?: string;
   temperature?: number;
   max_tokens?: number;
-  api_key?: string;
-  endpoint?: string;
+  apiKey?: string;
+  apiUrl?: string;
 }
 
 /**
@@ -129,4 +156,76 @@ export interface OptimizationResponse {
     };
     error_count: number;
   };
+}
+
+/**
+ * 流式优化进度事件接口
+ */
+export interface OptimizationProgressEvent {
+  /** 事件类型 */
+  type: 'start' | 'batch_start' | 'batch_complete' | 'batch_error' | 'complete' | 'error';
+  /** 事件数据 */
+  data: any;
+  /** 消息 */
+  message: string;
+  /** 时间戳 */
+  timestamp: number;
+}
+
+/**
+ * 流式优化进度事件详情
+ */
+export interface StartEventData {
+  total_subtitles: number;
+  total_batches: number;
+}
+
+export interface BatchStartEventData {
+  batch_number: number;
+  total_batches: number;
+  batchSize: number;
+  processed_count: number;
+  total_count: number;
+}
+
+export interface BatchCompleteEventData {
+  batch_number: number;
+  total_batches: number;
+  batchSize: number;
+  processed_count: number;
+  total_count: number;
+  batch_results: any[];
+  batch_processing_time: number;
+}
+
+export interface BatchErrorEventData {
+  batch_number: number;
+  total_batches: number;
+  batchSize: number;
+  processed_count: number;
+  total_count: number;
+  error: string;
+  fallback_results: any[];
+  batch_processing_time: number;
+}
+
+export interface CompleteEventData {
+  total_subtitles: number;
+  optimized_subtitles: any[];
+  metadata: {
+    total_subtitles: number;
+    batches_processed: number;
+    cache_hits: number;
+    cache_hit_rate: number;
+    processing_time: number;
+    model_used: string;
+    optimized_count: number;
+    fallback_count: number;
+    success_rate: number;
+  };
+}
+
+export interface ErrorEventData {
+  error: string;
+  message: string;
 }

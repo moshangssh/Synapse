@@ -137,18 +137,30 @@ class SimpleSubtitleItem(BaseModel):
 class OptimizationRequest(BaseModel):
     subtitles: List[SimpleSubtitleItem] = Field(..., description="要优化的字幕列表")
     reference_info: Optional[str] = Field(None, description="可选的参考信息")
-    batch_size: Optional[int] = Field(10, description="批次大小，默认为10")
+    batchSize: Optional[int] = Field(10, description="批次大小，默认为10")
+    parallelismCount: Optional[int] = Field(0, description="并行处理数量，0表示无限制")
     model: Optional[str] = Field("gpt-3.5-turbo", description="使用的LLM模型")
     temperature: Optional[float] = Field(0.7, description="模型温度参数")
     max_tokens: Optional[int] = Field(2000, description="最大令牌数")
-    api_key: Optional[str] = Field(None, description="可选的API密钥")
-    endpoint: Optional[str] = Field(None, description="可选的API端点")
+    apiKey: str = Field(..., description="用户提供的API密钥")
+    apiUrl: str = Field(..., description="用户提供的API地址")
 
 class OptimizedSubtitleItem(BaseModel):
     id: int
     original_text: str
     optimized_text: str
     diffs: List[DiffPartModel]
+
+class ConnectionTestRequest(BaseModel):
+    api_url: str = Field(..., description="API地址")
+    api_key: str = Field(..., description="API密钥")
+    model: str = Field("gpt-3.5-turbo", description="模型名称")
+
+class ConnectionTestResponse(BaseModel):
+    success: bool
+    message: str
+    details: Optional[Dict[str, Any]] = None
+    response_time: Optional[float] = None
 
 class OptimizationResponse(BaseModel):
     status: str = "success"

@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Synapse 是一个专为 DaVinci Resolve 设计的字幕增强工具，采用前后端分离的桌面应用架构。前端使用 React + Tauri，后端使用 Python FastAPI 作为 sidecar 进程。
 
+## Bamd配置
+
+core-config.yaml在.bmad-core/下
+
 ## 常用开发命令
 
 ### 前端开发

@@ -1,27 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
-import { calculateDiffApi } from '../integration/diffApi';
 import { useSubtitleStore } from '../stores/useSubtitleStore';
 import { filterSubtitles } from '../utils/filter';
 import { replaceAllSubtitles } from '../services/subtitleService';
-
-interface ReplaceAllRequest {
-  subtitles: Array<{
-    id: number;
-    startTimecode: string;
-    endTimecode: string;
-    text: string;
-  }>;
-  searchQuery: string;
-  replaceQuery: string;
-}
-
-interface ReplaceAllResponse {
-  status: string;
-  data: Array<{
-    id: number;
-    text: string;
-  }>;
-}
 
 export const useFindReplace = () => {
   const subtitles = useSubtitleStore((state) => state.subtitles);

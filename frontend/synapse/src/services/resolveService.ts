@@ -1,12 +1,12 @@
-import { Subtitle, ProjectInfo, SubtitleTrack } from '../types';
+import { ProjectInfo, SubtitleTrack, SubtitlesWithFrameRate } from '../types';
 import { API_BASE_URL, API_ENDPOINTS, handleApiError, handleNetworkError } from './apiConfig';
 
 /**
  * 获取字幕数据
  * @param trackIndex 轨道索引
- * @returns Promise<Subtitle[]> 字幕数组
+ * @returns Promise<SubtitlesWithFrameRate> 字幕数组和帧率
  */
-export const fetchSubtitles = async (trackIndex: number = 1): Promise<Subtitle[]> => {
+export const fetchSubtitles = async (trackIndex: number = 1): Promise<SubtitlesWithFrameRate> => {
   try {
     const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.SUBTITLES}?track_index=${trackIndex}`);
     const data = await response.json();
@@ -17,9 +17,15 @@ export const fetchSubtitles = async (trackIndex: number = 1): Promise<Subtitle[]
         originalText: sub.text,
         diffs: [{ type: "normal", value: sub.text }],
       }));
-      return subtitlesWithDiffs;
+      // Return both subtitles and frameRate
+      return {
+        subtitles: subtitlesWithDiffs,
+        frameRate: data.frameRate
+      };
     } else {
       await handleApiError(response, '获取字幕失败');
+      // This line will never be reached because handleApiError always throws an error
+      throw new Error('获取字幕失败');
     }
   } catch (error) {
     console.error('获取字幕失败:', error);
@@ -61,6 +67,8 @@ export const fetchSubtitleTracks = async (): Promise<SubtitleTrack[]> => {
       return data.data;
     } else {
       await handleApiError(response, '获取字幕轨道失败');
+      // This line will never be reached because handleApiError always throws an error
+      throw new Error('获取字幕轨道失败');
     }
   } catch (error) {
     console.error('获取字幕轨道失败:', error);

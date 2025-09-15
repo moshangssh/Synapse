@@ -178,9 +178,86 @@ class ResponseParser:
                 logger.warning(f"修复整个响应JSON失败: {repair_error}")
                 pass
         
+        # 备用解析逻辑：尝试从原始文本中提取独立的JSON对象
+        fallback_result = self._extract_individual_json_objects(response_content)
+        if fallback_result.success:
+            return fallback_result
+        
         return ParsedResponse(
             success=False,
             error="无法解析JSON格式",
+            raw_text=response_content
+        )
+    
+    def _extract_individual_json_objects(self, response_content: str) -> ParsedResponse:
+        """从原始文本中提取独立的JSON对象（备用解析逻辑）"""
+        logger.info("尝试从原始文本中提取独立的JSON对象")
+        
+        # 使用正则表达式匹配独立的JSON对象
+        # 匹配格式：{ ... } 或 [{ ... }]
+        individual_json_pattern = r'(\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}|\[\s*\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}\s*\])'
+        
+        try:
+            matches = re.findall(individual_json_pattern, response_content, re.DOTALL)
+            logger.info(f"找到 {len(matches)} 个候选JSON对象")
+            
+            parsed_objects = []
+            
+            for i, json_str in enumerate(matches):
+                json_str = json_str.strip()
+                logger.debug(f"尝试解析第 {i+1} 个JSON对象: {json_str[:100]}...")
+                
+                try:
+                    # 尝试解析这个JSON对象
+                    parsed_obj = json.loads(json_str)
+                    
+                    # 如果是数组，展开其中的对象
+                    if isinstance(parsed_obj, list):
+                        for item in parsed_obj:
+                            if isinstance(item, dict):
+                                parsed_objects.append(item)
+                    elif isinstance(parsed_obj, dict):
+                        parsed_objects.append(parsed_obj)
+                    
+                    logger.info(f"成功解析第 {i+1} 个JSON对象")
+                    
+                except json.JSONDecodeError as e:
+                    logger.warning(f"第 {i+1} 个JSON对象解析失败: {e}")
+                    # 尝试使用json_repair修复
+                    try:
+                        repaired_json = repair_json(json_str)
+                        parsed_obj = json.loads(repaired_json)
+                        
+                        if isinstance(parsed_obj, list):
+                            for item in parsed_obj:
+                                if isinstance(item, dict):
+                                    parsed_objects.append(item)
+                        elif isinstance(parsed_obj, dict):
+                            parsed_objects.append(parsed_obj)
+                        
+                        logger.info(f"使用json_repair修复第 {i+1} 个JSON对象成功")
+                        
+                    except Exception as repair_error:
+                        logger.warning(f"修复第 {i+1} 个JSON对象失败: {repair_error}")
+                        continue
+            
+            if parsed_objects:
+                logger.info(f"成功提取 {len(parsed_objects)} 个JSON对象")
+                return ParsedResponse(
+                    success=True,
+                    data=parsed_objects,
+                    raw_text=response_content,
+                    warnings=[f"从原始文本中提取了 {len(parsed_objects)} 个独立的JSON对象"]
+                )
+            else:
+                logger.warning("未能从原始文本中提取任何有效的JSON对象")
+                
+        except Exception as e:
+            logger.error(f"提取独立JSON对象时发生错误: {e}")
+        
+        return ParsedResponse(
+            success=False,
+            error="备用解析失败：无法从原始文本中提取有效的JSON对象",
             raw_text=response_content
         )
     
